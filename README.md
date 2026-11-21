@@ -4,7 +4,7 @@
 
 # Yu-Gi-Oh! Power of Chaos Remake
 
-**English** | [Español](README.es.md)
+**English**
 
 [![Download EXE for Windows](https://img.shields.io/badge/Download_EXE-Windows-2ea44f?style=for-the-badge)](https://github.com/Johanfer12/Yu-Gi-Oh-Power-of-Chaos-Remake/releases/download/v0.1.0-alpha.42/PowerOfChaos.exe)
 

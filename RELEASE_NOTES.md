@@ -2,7 +2,7 @@
 
 <!-- Write release notes in English. Include only changes for the version. -->
 
-For installation and updates, see the [Android update guide](docs/ANDROID_UPDATES.md#in-app-update).
+For installation and updates, see the [releases page](https://github.com/vanisroyle/ypoc/releases).
 
 ## v0.1.0-alpha.42
 
