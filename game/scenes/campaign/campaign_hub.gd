@@ -26,7 +26,7 @@ func _ready() -> void:
 	add_child(bg)
 
 	var title := Label.new()
-	title.text = "PODER DEL CAOS — CAMPAÑA"
+	title.text = "PODER DEL CAOS — CAMPAÑA" if Assets.lang == "s" else "POWER OF CHAOS — CAMPAIGN"
 	title.add_theme_color_override("font_color", GOLD)
 	title.add_theme_font_size_override("font_size", 22)
 	title.position = Vector2(0, 18)
@@ -94,13 +94,13 @@ func _add_panel(i: int, rival: Dictionary, state: String, open: bool) -> void:
 	status.add_theme_font_size_override("font_size", 15)
 	match state:
 		"defeated":
-			status.text = "DERROTADO — revancha disponible"
+			status.text = "DERROTADO — revancha disponible" if Assets.lang == "s" else "DEFEATED — rematch available"
 			status.add_theme_color_override("font_color", Color(0.6, 0.9, 0.5))
 		"next":
-			status.text = "SIGUIENTE RIVAL"
+			status.text = "SIGUIENTE RIVAL" if Assets.lang == "s" else "NEXT RIVAL"
 			status.add_theme_color_override("font_color", GOLD)
 		_:
-			status.text = "BLOQUEADO"
+			status.text = "BLOQUEADO" if Assets.lang == "s" else "LOCKED"
 			status.add_theme_color_override("font_color", LOCKED)
 	v.add_child(status)
 
@@ -112,15 +112,15 @@ func _add_panel(i: int, rival: Dictionary, state: String, open: bool) -> void:
 	var stats: Dictionary = SaveData.data.get("stats", {}).get(rival["game"], {})
 	var streak := int(stats.get("streak", 0))
 	if rival["game"] == "joey":
-		hint.text = "Nivel de IA: %d/7" % int(stats.get("level", 1))
+		hint.text = ("Nivel de IA: %d/7" if Assets.lang == "s" else "AI level: %d/7") % int(stats.get("level", 1))
 	elif streak > 0:
-		hint.text = "Racha: %d" % streak
+		hint.text = ("Racha: %d" if Assets.lang == "s" else "Streak: %d") % streak
 	else:
 		hint.text = ""
 	v.add_child(hint)
 
 	var duel := Button.new()
-	duel.text = "DUELAR" if state != "defeated" else "REVANCHA"
+	duel.text = ("DUELAR" if state != "defeated" else "REVANCHA") if Assets.lang == "s" else ("DUEL" if state != "defeated" else "REMATCH")
 	duel.custom_minimum_size = Vector2(0, 44)
 	duel.add_theme_font_size_override("font_size", 18)
 	duel.disabled = not open
@@ -142,7 +142,7 @@ func _footer() -> void:
 		owned += int(SaveData.card_count(int(card["internal_id"])) > 0)
 
 	var bar := Label.new()
-	bar.text = "Colección: %d/%d cartas" % [owned, pool.size()]
+	bar.text = ("Colección: %d/%d cartas" if Assets.lang == "s" else "Collection: %d/%d cards") % [owned, pool.size()]
 	bar.add_theme_color_override("font_color", GOLD_LIGHT)
 	bar.add_theme_font_size_override("font_size", 16)
 	bar.position = Vector2(40, 540)
@@ -150,7 +150,7 @@ func _footer() -> void:
 	add_child(bar)
 
 	var free := Button.new()
-	free.text = "Colección y opciones"
+	free.text = "Colección y opciones" if Assets.lang == "s" else "Collection & options"
 	free.custom_minimum_size = Vector2(220, 40)
 	free.position = Vector2(540, 532)
 	free.add_theme_font_size_override("font_size", 15)
