@@ -246,8 +246,14 @@ func open_title(game: String, focus := "", launcher_cover: CanvasLayer = null) -
 func open_ending(game: String, mode := "credits") -> void:
 	current_game = game
 	var scene: Node2D = load("res://scenes/ending/ending_scene.gd").new(game, mode)
-	scene.finished.connect(open_title.bind(game), CONNECT_ONE_SHOT)
+	scene.finished.connect(open_campaign_hub, CONNECT_ONE_SHOT)
 	goto(scene)
+
+
+## Campaña: la pantalla de rivales, portada unica del juego. Derrotar a cada rival
+## (yugi -> kaiba -> joey) abre al siguiente; los vencidos admiten revancha.
+func open_campaign_hub() -> void:
+	goto(load("res://scenes/campaign/campaign_hub.gd").new())
 
 
 func open_deck_editor(game: String) -> void:
@@ -476,28 +482,34 @@ func finish_normal_duel(game: String, winner: int) -> void:
 		Lan.close()
 	if winner == 0:
 		Audio.stop_music()
-		open_title(game, "duel")
+		if duel_mode == 3:
+			open_title(game, "duel")
+		else:
+			open_campaign_hub()
 		return
 	# Campaña: vencer al rival pendiente desbloquea al siguiente (yugi -> kaiba -> joey).
 	# Solo contra la CPU: los duelos LAN (modo 3) no cuentan.
-	var next := game
 	var completed := false
 	if winner == 1 and duel_mode != 3 and game == SaveData.campaign_next():
 		SaveData.campaign_mark_defeated(game)
-		next = SaveData.campaign_next()
-		completed = next == ""
-		if completed:
-			next = game
+		completed = SaveData.campaign_next() == ""
 	if LauncherSettings.fast_play:
-		open_title(next, "duel")
+		if completed:
+			open_ending(game)
+		elif duel_mode == 3:
+			open_title(game, "duel")
+		else:
+			open_campaign_hub()
 		return
 	var script: GDScript = load("res://scenes/duel/bust_up_scene.gd") if game == "yugi" else load("res://scenes/duel/bust_up_rival.gd")
 	var scene: Node2D = script.new(game, winner)
 	if completed:
 		# Campaña completa: creditos tras el ultimo rival.
 		scene.finished.connect(open_ending.bind(game), CONNECT_ONE_SHOT)
+	elif duel_mode == 3:
+		scene.finished.connect(open_title.bind(game, "duel"), CONNECT_ONE_SHOT)
 	else:
-		scene.finished.connect(open_title.bind(next, "duel"), CONNECT_ONE_SHOT)
+		scene.finished.connect(open_campaign_hub, CONNECT_ONE_SHOT)
 	goto(scene)
 
 
