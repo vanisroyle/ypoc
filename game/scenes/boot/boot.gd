@@ -28,15 +28,17 @@ func _ready() -> void:
 	elif start in Game.GAMES:
 		Game.open_title(start)
 	else:
-		# Arranca en el juego mas completo instalado (joey > kaiba > yugi);
-		# el selector sigue accesible desde los menus del juego. Solo cuando no
-		# hay migracion pendiente ni una cuenta de Drive vinculada: ambos pasos
-		# ocurren en el selector de juegos.
+		# Arranca en el rival pendiente de la campaña (yugi -> kaiba -> joey); con
+		# la campaña completada, en el juego mas completo instalado. El selector
+		# sigue accesible desde los menus. Solo cuando no hay migracion pendiente
+		# ni una cuenta de Drive vinculada: ambos pasos ocurren en el selector.
 		var default_game := ""
 		if Paths.migration_source == "" and not CloudSync.linked():
-			for game in Game.GAMES:
-				if Paths.has_game(game):
-					default_game = game
+			default_game = SaveData.campaign_next()
+			if default_game == "":
+				for game in Game.GAMES:
+					if Paths.has_game(game):
+						default_game = game
 		if default_game != "":
 			Game.open_title(default_game)
 		else:

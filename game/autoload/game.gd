@@ -478,12 +478,26 @@ func finish_normal_duel(game: String, winner: int) -> void:
 		Audio.stop_music()
 		open_title(game, "duel")
 		return
+	# Campaña: vencer al rival pendiente desbloquea al siguiente (yugi -> kaiba -> joey).
+	# Solo contra la CPU: los duelos LAN (modo 3) no cuentan.
+	var next := game
+	var completed := false
+	if winner == 1 and duel_mode != 3 and game == SaveData.campaign_next():
+		SaveData.campaign_mark_defeated(game)
+		next = SaveData.campaign_next()
+		completed = next == ""
+		if completed:
+			next = game
 	if LauncherSettings.fast_play:
-		open_title(game, "duel")
+		open_title(next, "duel")
 		return
 	var script: GDScript = load("res://scenes/duel/bust_up_scene.gd") if game == "yugi" else load("res://scenes/duel/bust_up_rival.gd")
 	var scene: Node2D = script.new(game, winner)
-	scene.finished.connect(open_title.bind(game, "duel"), CONNECT_ONE_SHOT)
+	if completed:
+		# Campaña completa: creditos tras el ultimo rival.
+		scene.finished.connect(open_ending.bind(game), CONNECT_ONE_SHOT)
+	else:
+		scene.finished.connect(open_title.bind(next, "duel"), CONNECT_ONE_SHOT)
 	goto(scene)
 
 

@@ -518,6 +518,24 @@ func ensure_game(game: String, validate_startup := true) -> void:
 		save()
 
 
+## Campaña: rivales derrotados en orden (yugi -> kaiba -> joey); persiste en system.json.
+func campaign_mark_defeated(game: String) -> void:
+	var campaign: Dictionary = data.get_or_add("campaign", {})
+	var defeated: Array = campaign.get_or_add("defeated", [])
+	if game not in defeated:
+		defeated.append(game)
+		save()
+
+
+## Primer juego instalado aun sin vencer en la campaña; "" con la campaña completa.
+func campaign_next() -> String:
+	var defeated: Array = data.get("campaign", {}).get("defeated", [])
+	for game in GAMES:
+		if Paths.has_game(game) and game not in defeated:
+			return game
+	return ""
+
+
 ## Conserva la ranura comun del original. Version 1 separaba totales por juego:
 ## se suman partidas propias; si hubo importacion, la base duplicada se cuenta una vez.
 func _migrate_shared_stats() -> void:
