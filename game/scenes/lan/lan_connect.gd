@@ -78,7 +78,7 @@ func _ready() -> void:
 
 
 ## Campo del nombre: 44e420/44e900/44ed60 del original. Un LineEdit muestra el teclado en
-## pantalla en Android; va sin marco sobre el recuadro blanco de 2p_duel.
+## va sin marco sobre el recuadro blanco de 2p_duel.
 func _setup_name() -> void:
 	var empty := StyleBoxEmpty.new()
 	empty.set_content_margin_all(0)
@@ -211,7 +211,7 @@ func _step() -> void:
 			_dir = 0
 			_t = 0
 			_warp(0)
-			# 44e900 escribe en el campo desde el principio (en Android abre el teclado).
+			# 44e900 escribe en el campo desde el principio.
 			_name.grab_focus()
 			_name.caret_column = _name.text.length()
 		1:

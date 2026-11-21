@@ -2,7 +2,7 @@ extends Node
 ## Sesion LAN del port (D17). Sustituye el DirectPlay 8 de igual a igual de Joey
 ## (443650 crea CLSID_DirectPlay8Peer; 443790 hospeda, 4437f0/443840 enumeran, 443860 se une,
 ## 443aa0 recibe, 443e60 envia, 4438d0 cierra) por transporte moderno de Godot que funciona igual
-## en PC y Android:
+## entre equipos en la red local:
 ##   - ENetMultiplayerPeer (UDP con entrega fiable y ordenada) para los mensajes del juego.
 ##   - Descubrimiento por UDP: el anfitrion anuncia la partida por difusion y responde por unicast
 ##     a las consultas de los invitados (lo que en DirectPlay hacia EnumHosts).
@@ -21,7 +21,7 @@ extends Node
 
 ## Puerto del juego. DirectPlay usaba 2302-2400 y 6073 (el original no fija uno propio).
 const GAME_PORT := 47624
-## El anfitrion escucha consultas aqui y responde por unicast (sirve tambien en Android, donde
+## El anfitrion escucha consultas aqui y responde por unicast (sirve tambien donde
 ## algunas redes filtran la difusion recibida).
 const QUERY_PORT := 47625
 ## Los anuncios periodicos del anfitrion van a este puerto por difusion.

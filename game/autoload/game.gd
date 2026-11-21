@@ -18,7 +18,6 @@ class WindowShortcuts:
 			LauncherSettings.toggle_fullscreen(get_tree().root)
 
 var _window_shortcuts := WindowShortcuts.new()
-var _mobile_pointer: CanvasLayer
 
 const DUEL_VIEWER_PATH := "res://scenes/duel/replay_viewer.gd"
 
@@ -91,9 +90,6 @@ func _ready() -> void:
 	if language == "":
 		language = Assets.preferred_language()
 	Assets.set_language(language)
-	if OS.has_feature("mobile") or Paths.cmdline_value("mobile-controls") == "true":
-		_mobile_pointer = preload("res://core/mobile_pointer.gd").new()
-		get_tree().root.add_child.call_deferred(_mobile_pointer)
 	get_tree().root.add_child.call_deferred(_window_shortcuts)
 	# 0x40c66a: el MT de interfaz se siembra una vez al arrancar con GetTickCount (Debug lo
 	# resiembra despues si hay --ui-seed o --ui-replay con semilla).
@@ -127,7 +123,7 @@ func goto(screen: Node) -> void:
 	var headless := DisplayServer.get_name() == "headless"
 	if not LauncherSettings.fast_play and current_game != "" and (not headless or Debug.headless_wipe) \
 			and is_instance_valid(_screen) and _screen.is_inside_tree() \
-			and _screen.get_script().resource_path.get_file() not in ["launcher.gd", "launcher_android.gd", "content_setup.gd"]:
+			and _screen.get_script().resource_path.get_file() not in ["launcher.gd", "content_setup.gd"]:
 		# Sin ventana no hay imagen que barrer; el cotejo por valores (--ui-values) conserva el
 		# barrido con una imagen vacia porque retiene la pantalla nueva los mismos ticks.
 		if not headless:
@@ -155,9 +151,6 @@ func goto(screen: Node) -> void:
 		get_tree().root.add_child.call_deferred(_screen_host)
 	else:
 		get_tree().root.add_child.call_deferred(screen)
-	if is_instance_valid(_mobile_pointer):
-		_mobile_pointer.cancel()
-		get_tree().root.move_child.call_deferred(_mobile_pointer, -1)
 	get_tree().root.move_child.call_deferred(_window_shortcuts, -1)
 	if old_frame != null:
 		_start_scene_wipe.call_deferred(old_frame, screen, effect, waves)
@@ -229,12 +222,8 @@ func _start_scene_wipe(old_frame: Texture2D, screen: Node, effect := 0x13, waves
 
 func open_launcher() -> void:
 	current_game = ""
-	# Android: biblioteca instalada o importador del PCK privado. PC: biblioteca e importador
-	# de las copias del usuario (content_setup amplía el launcher de escritorio).
-	if Paths.android_platform():
-		goto(load("res://scenes/launcher/launcher_android.gd").new() if Paths.has_data() else load("res://scenes/launcher/android_content_setup.gd").new())
-	else:
-		goto(load("res://scenes/launcher/content_setup.gd").new())
+	# Biblioteca e importador de las copias del usuario (content_setup amplía el launcher).
+	goto(load("res://scenes/launcher/content_setup.gd").new())
 
 
 ## Al volver de otra pantalla (`focus` = opcion de la que se viene) no se repite la portada

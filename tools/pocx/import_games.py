@@ -435,7 +435,6 @@ def _main() -> None:
     parser.add_argument("--replace", action="store_true", help="actualiza atómicamente una biblioteca existente")
     parser.add_argument("--reimport", action="append", choices=GAMES, default=[],
                         help="permite volver a importar el juego instalado indicado")
-    parser.add_argument("--create-apk", action="store_true", help="compila con la copia Android; --out es la carpeta del launcher")
     parser.add_argument("--no-compact", action="store_true", help="conserva PNG/WAV para herramientas de desarrollo")
     parser.add_argument("--voice", action="append", default=[], metavar="GAME=VOICE.DAT",
                         help="añade otro doblaje; repetible, sin reemplazar idiomas distintos")
@@ -450,14 +449,9 @@ def _main() -> None:
             game, path = spec.split("=", 1)
             extra.append((game, Path(path)))
         sources = {game: getattr(args, game) for game in GAMES if getattr(args, game) is not None}
-        if args.create_apk:
-            from .android_builder import create_apk
-            create_apk(sources, args.out, extra, args.base, yugi_update=args.yugi_update,
-                       reimport=frozenset(args.reimport))
-        else:
-            import_games(sources, args.out, extra, args.base,
-                         compact=not args.no_compact, replace=args.replace, yugi_update=args.yugi_update,
-                         reimport=frozenset(args.reimport))
+        import_games(sources, args.out, extra, args.base,
+                     compact=not args.no_compact, replace=args.replace, yugi_update=args.yugi_update,
+                     reimport=frozenset(args.reimport))
     except (OSError, ValueError, KeyError, RuntimeError, subprocess.SubprocessError, SystemExit) as error:
         failure = (error if isinstance(error, ImportFailure) else
                    ImportFailure("setup", str(error)) if isinstance(error, UserError) else

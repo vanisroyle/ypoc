@@ -9,17 +9,11 @@ import shutil
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
-TOP = {"docs/ANDROID_UPDATES.md", "docs/PRIVACY.md","RELEASE_NOTES.md", "README.md", "README.es.md", "Jugar demo.bat", "THIRD_PARTY_NOTICES.md", ".gitattributes", "docs/LAUNCHER_SETTINGS.md", "docs/REDDIT_POST.en.md", "docs/CARD_TRANSLATIONS.md", "game/translations/spanish-card-catalog.json"}
+TOP = {"docs/PRIVACY.md","RELEASE_NOTES.md", "README.md", "README.es.md", "Jugar demo.bat", "THIRD_PARTY_NOTICES.md", ".gitattributes", "docs/LAUNCHER_SETTINGS.md", "docs/REDDIT_POST.en.md", "docs/CARD_TRANSLATIONS.md", "game/translations/spanish-card-catalog.json"}
 TOOL_TOP = {"tools/pyproject.toml", "tools/prepare_public.py", "tools/build_windows.py", "tools/importer_entry.py", "tools/trace_logo_contours.py",
             "tools/tests/test_public_import.py", "tools/tests/test_media_import.py",
-            "tools/tests/test_compact_import.py", "tools/configure_android_builder.py", "tools/tests/test_android_builder.py", "tools/tests/test_android_toolchain.py", "tools/tests/test_updater.py", "tools/tests/test_card_translations.py", "tools/tests/test_reviewed_card_pack.py",
-            "tools/prepare_android_public.py", "tools/public_android/README.md", "tools/public_android/README.es.md",
-            ".github/workflows/build-windows.yml", "game/export_presets.cfg",
-            # CI builds the APK from the Android snapshot of this same tree (build_android.py).
-            "tools/build_android.py", "tools/android/build_apk.py", "tools/android/pack_data.gd",
-            "game/tests/android_bundle_test.gd", "game/tests/android_engine_bundle_test.gd",
-            "game/assets/icons/launcher-adaptive-foreground.svg", "game/assets/icons/launcher-adaptive-background.svg",
-            "game/assets/icons/launcher-adaptive-monochrome.svg"}
+            "tools/tests/test_compact_import.py", "tools/tests/test_updater.py", "tools/tests/test_card_translations.py", "tools/tests/test_reviewed_card_pack.py",
+            ".github/workflows/build-windows.yml", "game/export_presets.cfg"}
 OWN_ASSETS = {"game/assets/music/launcher_theme.mp3",
               "game/assets/backgrounds/yugi_duel.jpg",
               "game/assets/backgrounds/joey_duel.png",
@@ -70,7 +64,7 @@ def prepare(output: Path) -> dict:
               "data/\nextracted/\nsamples/\nsaves/\nimports/\nartifacts/\nre/\n"
               ".godot/\n__pycache__/\n*.pyc\n*.uid\n*.iso\n*.exe\n*.dat\n*.bin\n"
               "*.pck\n*.apk\n*.keystore\n*.jks\n.env*\n.venv/\n*.egg-info/\n"
-              "build/\ndist/\ncontent.cfg\nPoC Data/\nandroid-builder.json\n*.import\n")
+              "build/\ndist/\ncontent.cfg\nPoC Data/\n*.import\n")
     (output / ".gitignore").write_text(ignore, encoding="utf-8", newline="\n")
     manifest[".gitignore"] = hashlib.sha256((output / ".gitignore").read_bytes()).hexdigest()
     (output / ".gitattributes").write_bytes(b"* text=auto eol=lf\n")

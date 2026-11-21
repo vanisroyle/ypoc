@@ -34,8 +34,6 @@ jobs:
           PYTHONPATH: tools
         run: |
           python -m unittest discover -s tools/tests -p 'test_*import.py' -v
-          python -m unittest discover -s tools/tests -p test_android_builder.py -v
-          python -m unittest discover -s tools/tests -p test_android_toolchain.py -v
           python -m unittest discover -s tools/tests -p test_updater.py -v
           python -m unittest discover -s tools/tests -p test_card_translations.py -v
           python -m unittest discover -s tools/tests -p test_reviewed_card_pack.py -v
@@ -44,7 +42,7 @@ jobs:
           path: ${{ runner.tool_cache }}/poc-godot-4.7.2
           key: godot-windows-4.7.2-verified-v2
       # El secreto del cliente OAuth de Google Drive tampoco se publica: se escribe en
-      # project.godot solo en el runner, antes de exportar el APK y el EXE.
+      # project.godot solo en el runner, antes de exportar el EXE.
       # Dos clientes: el de dispositivo (codigo) y el de escritorio (navegador, sin codigo). Cada
       # linea se sustituye anclada: client_secret="" tambien aparece dentro de desktop_client_secret.
       - name: Anadir el cliente de Google Drive
@@ -67,27 +65,8 @@ jobs:
             Write-Warning "Sin GOOGLE_OAUTH_DESKTOP_CLIENT_SECRET: Drive se vincula con el codigo de google.com/device"
           }
           [IO.File]::WriteAllText($path, $text)
-      # La clave de firma solo existe como secreto del repositorio. Sin ella (forks) se compila
-      # con una clave desechable para comprobar el APK, pero una etiqueta exige la publicada.
-      - name: Compilar y firmar APK Android
-        env:
-          ANDROID_SIGNING_KEYSTORE: ${{ secrets.ANDROID_SIGNING_KEYSTORE }}
-        run: |
-          $signing = @()
-          if ($env:ANDROID_SIGNING_KEYSTORE) {
-            $key = Join-Path $env:RUNNER_TEMP "signing.keystore"
-            [IO.File]::WriteAllBytes($key, [Convert]::FromBase64String($env:ANDROID_SIGNING_KEYSTORE))
-            $signing = @("--keystore", $key)
-          } elseif ($env:GITHUB_REF -like "refs/tags/*") {
-            throw "Falta el secreto ANDROID_SIGNING_KEYSTORE: una versión debe firmarse con la clave publicada"
-          }
-          python tools/build_android.py --engine-cache "${{ runner.tool_cache }}/poc-godot-4.7.2" --out "$env:RUNNER_TEMP/android" @signing
-          if ($LASTEXITCODE) { exit $LASTEXITCODE }
-      - name: Borrar la clave de firma del runner
-        if: always()
-        run: Remove-Item -Force -ErrorAction SilentlyContinue (Join-Path $env:RUNNER_TEMP "signing.keystore")
       - name: Compilar launcher y conversor local
-        run: python tools/build_windows.py --engine-cache "${{ runner.tool_cache }}/poc-godot-4.7.2" --out dist/windows --android "$env:RUNNER_TEMP/android"
+        run: python tools/build_windows.py --engine-cache "${{ runner.tool_cache }}/poc-godot-4.7.2" --out dist/windows
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: PowerOfChaos-Windows
@@ -95,9 +74,6 @@ jobs:
             dist/windows/PowerOfChaos.exe
             dist/windows/PowerOfChaos.exe.sha256
             dist/windows/BUILD_MANIFEST.json
-            dist/windows/PowerOfChaos-Android.apk
-            dist/windows/PowerOfChaos-Android.apk.sha256
-            dist/windows/ANDROID_RELEASE.json
           if-no-files-found: error
           retention-days: 30
       - name: Conservar diagnóstico de compilación
@@ -105,10 +81,7 @@ jobs:
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: windows-build-logs
-          path: |
-            dist/windows/logs/
-            ${{ runner.temp }}/android/work/build/*.log
-            ${{ runner.temp }}/android/work/build/*.json
+          path: dist/windows/logs/
           if-no-files-found: ignore
           retention-days: 14
 

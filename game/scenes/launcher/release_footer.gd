@@ -59,10 +59,6 @@ func hint() -> String:
 		"current": return "Tienes la versión más reciente" if _spanish() else "You have the latest version"
 		"downloading": return "Descargando y verificando…" if _spanish() else "Downloading and verifying…"
 		"installing": return "Actualizando…" if _spanish() else "Installing update…"
-		# Android: el sistema confirma la instalación del APK descargado.
-		"ready": return "Actualización descargada · Pulsa actualizar para instalar" if _spanish() else "Update downloaded · Press update to install"
-		"opened": return "Confirma la instalación en Android" if _spanish() else "Confirm installation in Android"
-		"manual": return "Actualización con otra firma: consulta el aviso" if _spanish() else "Different signing key: see details"
 		"error": return "No se pudo comprobar o completar la actualización" if _spanish() else "Could not check or complete the update"
 	return "Actualizaciones desde GitHub" if _spanish() else "Updates from GitHub"
 
@@ -93,9 +89,6 @@ func _layout() -> void:
 func open_update() -> void:
 	if not Updates.supported():
 		OS.shell_open(RELEASES_URL)
-		return
-	if Paths.android_platform() and Updates.state in ["ready", "opened"]:
-		Updates.download() # Reabre el instalador con el APK ya verificado.
 		return
 	if Updates.state != "available":
 		Updates.check()
@@ -137,9 +130,7 @@ func _show_release() -> void:
 	_dialog.get_ok_button().text = "Actualizar" if _spanish() else "Update"
 	_dialog.get_ok_button().show()
 	_dialog.get_cancel_button().text = "Cancelar" if _spanish() else "Cancel"
-	_update_message.text = ("Android te pedirá confirmar la instalación." if _spanish()
-		else "Android will ask you to confirm installation.") if Paths.android_platform() else (
-		"El juego se reiniciará al instalar la actualización." if _spanish()
+	_update_message.text = ("El juego se reiniciará al instalar la actualización." if _spanish()
 		else "The game will restart to install the update.")
 	var notes: String = Updates.release_notes
 	_fill_notes(notes if not notes.is_empty() else ("GitHub no publicó notas para esta versión." if _spanish()
@@ -201,6 +192,5 @@ func _process(_delta: float) -> void:
 
 
 func _open_licenses() -> void:
-	# Android no lleva las herramientas de escritorio: abre los avisos publicados.
-	var directory := "" if Paths.android_platform() else BundledTools.prepare(true)
+	var directory := BundledTools.prepare(true)
 	OS.shell_open(directory if directory != "" else Updates.REPOSITORY + "/blob/main/THIRD_PARTY_NOTICES.md")

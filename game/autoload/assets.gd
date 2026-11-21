@@ -1,7 +1,7 @@
 extends Node
 ## Acceso a data/ (fuera de res://, porque los assets de Konami no van en el proyecto).
 ## - Busqueda sin distinguir mayusculas: los scripts dicen "TITLE1.bmp" y el archivo es
-##   "title1.png"; en Android el sistema de archivos si distingue.
+##   "title1.png"; conviene conservar los nombres exactos.
 ## - ".bmp"/".yga" se resuelven al ".png" convertido.
 ## - "?" es la letra de idioma; si el recurso no existe en ese idioma se usa el ingles.
 

@@ -106,22 +106,6 @@ const COPY := {
 		"Usa i nomi e le descrizioni migliorati in spagnolo, se disponibili.",
 		"利用できる場合に、改良されたスペイン語のカード名と説明を使用します。",
 	],
-	"hold": [
-		"Mantener pulsado para hacer clic derecho durante el duelo.",
-		"Press and hold to right-click during a duel.",
-		"Im Duell gedrückt halten, um einen Rechtsklick auszulösen.",
-		"Maintenir appuyé pour faire un clic droit pendant un duel.",
-		"Tieni premuto per fare clic destro durante un duello.",
-		"デュエル中、長押しで右クリックします。",
-	],
-	"menu": [
-		"Usar el menú táctil para elegir clic izquierdo o derecho durante el duelo.",
-		"Use the touch menu to choose left or right click during a duel.",
-		"Im Duell Links- oder Rechtsklick über das Touch-Menü wählen.",
-		"Choisir entre clic gauche et clic droit dans le menu tactile pendant un duel.",
-		"Scegli il clic sinistro o destro dal menu tattile durante un duello.",
-		"デュエル中、タッチメニューから左クリックまたは右クリックを選びます。",
-	],
 	"reset": [
 		"Restablecer la partida y los ajustes. Se crea una copia de seguridad.",
 		"Reset saves and settings. A backup is created.",
@@ -129,14 +113,6 @@ const COPY := {
 		"Réinitialiser les sauvegardes et les réglages. Une copie de secours sera créée.",
 		"Ripristina salvataggi e impostazioni. Verrà creata una copia di sicurezza.",
 		"セーブデータと設定を初期化します。バックアップが作成されます。",
-	],
-	"pack": [
-		"Seleccionar un paquete .pck de recursos del juego.",
-		"Select a .pck pack containing game resources.",
-		"Ein .pck-Paket mit Spielressourcen auswählen.",
-		"Sélectionner un fichier .pck contenant les ressources du jeu.",
-		"Seleziona un pacchetto .pck con le risorse di gioco.",
-		"ゲームリソースの .pck ファイルを選びます。",
 	],
 	"language": [
 		"Cambiar el idioma del juego.",

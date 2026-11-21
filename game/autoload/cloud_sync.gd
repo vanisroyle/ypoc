@@ -1,5 +1,5 @@
 extends Node
-## Sincroniza saves/system.json entre PC y Android a traves de Google Drive.
+## Sincroniza saves/system.json entre equipos a traves de Google Drive.
 ## Vinculacion por navegador (cliente "App de escritorio": pagina normal de Google, PKCE y
 ## respuesta a un puerto local 127.0.0.1, sin codigo ni canal de YouTube). Si la version no
 ## trae ese cliente, flujo OAuth para dispositivos (codigo en google.com/device) como el
@@ -112,7 +112,7 @@ func linked() -> bool:
 
 
 func _notification(what: int) -> void:
-	# Android puede cerrar la app en segundo plano: no esperar al temporizador.
+	# No esperar al temporizador: guardar al cerrar la aplicacion.
 	if what == NOTIFICATION_APPLICATION_PAUSED and not _upload_timer.is_stopped():
 		_upload_timer.stop()
 		sync_now(false)
@@ -182,7 +182,7 @@ func link() -> void:
 
 
 ## Navegador del sistema con la pagina de Google; la respuesta llega a 127.0.0.1:<puerto>.
-## En Android la app queda en segundo plano: la conexion espera en el puerto hasta volver.
+## Si la app queda en segundo plano, la conexion espera en el puerto hasta volver.
 func _link_browser(serial: int) -> void:
 	var server := TCPServer.new()
 	if server.listen(0, "127.0.0.1") != OK:
@@ -430,8 +430,6 @@ func resolve_conflict(keep: String) -> void:
 
 ## Nombre visible en el aviso de conflicto del otro dispositivo.
 static func device_name() -> String:
-	if OS.has_feature("mobile"):
-		return OS.get_model_name()
 	var host := OS.get_environment("COMPUTERNAME")
 	return host if host != "" else OS.get_name()
 

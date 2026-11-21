@@ -209,7 +209,7 @@ func _commit_import(fresh: Dictionary, keep_deck_header: bool) -> bool:
 ## f540450 no lo reproduce.
 ## Devuelve {block, decks}: el bloque (actualizado si cambio) y el mazo de cada juego.
 ## El motor de Yugi se carga al validar mazos: tiparlo aquí lo compilaba entero (cientos de
-## milisegundos en PC, varios segundos en Android) antes de mostrar el launcher.
+## milisegundos habitualmente) antes de mostrar el launcher.
 static func _duel_script() -> Script:
 	return load("res://duel/core/duel.gd")
 

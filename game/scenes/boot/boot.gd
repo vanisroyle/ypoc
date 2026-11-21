@@ -3,13 +3,8 @@ extends Node2D
 
 
 func _ready() -> void:
-	# Herramienta de desarrollo Android: prueba de compartir sin abrir el juego.
-	if Paths.cmdline_value("share-smoke") == "true":
-		get_tree().root.add_child.call_deferred(load("res://share_smoke.gd").new())
-		queue_free()
-		return
 	_apply_window_override()
-	# Sin recursos: el importador de la plataforma (PC: copias del usuario; Android: PCK).
+	# Sin recursos: el importador de las copias del usuario.
 	if not Paths.has_data() or Paths.storage_error:
 		Game.open_launcher()
 		queue_free()
@@ -40,7 +35,7 @@ func _ready() -> void:
 ## El modo maximizado se configura al crear la ventana en project.godot.
 ## --window=ANCHOxALTO tiene prioridad sobre la preferencia del launcher.
 func _apply_window_override() -> void:
-	if DisplayServer.get_name() == "headless" or OS.has_feature("mobile"):
+	if DisplayServer.get_name() == "headless":
 		return
 	var forced := Paths.cmdline_value("window").split("x")
 	if forced.size() == 2 and forced[0].is_valid_int() and forced[1].is_valid_int():

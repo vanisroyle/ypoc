@@ -29,8 +29,8 @@ func _refresh() -> void:
 	else:
 		match CloudSync.state:
 			"off":
-				lines.append("Sincroniza cartas, barajas y resultados entre PC y Android con tu Google Drive. El juego solo puede ver los archivos que crea él mismo." if spanish
-						else "Sync cards, decks and results between PC and Android through your Google Drive. The game can only see the files it creates.")
+				lines.append("Sincroniza cartas, barajas y resultados entre tus dispositivos con tu Google Drive. El juego solo puede ver los archivos que crea él mismo." if spanish
+						else "Sync cards, decks and results between your devices through your Google Drive. The game can only see the files it creates.")
 				_add("Conectar" if spanish else "Connect", "link")
 			"linking":
 				if CloudSync.browser_mode:

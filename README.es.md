@@ -8,8 +8,6 @@
 
 [![Descargar EXE para Windows](https://img.shields.io/badge/Descargar_EXE-Windows-2ea44f?style=for-the-badge)](https://github.com/Johanfer12/Yu-Gi-Oh-Power-of-Chaos-Remake/releases/download/v0.1.0-alpha.42/PowerOfChaos.exe)
 
-[![Descargar APK Android](https://img.shields.io/badge/Android-APK-3DDC84?style=for-the-badge)](https://github.com/Johanfer12/Yu-Gi-Oh-Power-of-Chaos-Remake/releases/download/v0.1.0-alpha.42/PowerOfChaos-Android.apk)
-
 **Descarga directa · Windows · Preliminar v0.1.0-alpha.42 · Sin ZIP**
 
 **Tus juegos de Power of Chaos reunidos en un launcher moderno para Windows.**
@@ -20,7 +18,7 @@
 
 - [Ventajas](#ventajas)
 - [Ajustes del launcher](#ajustes-del-launcher)
-- [Tus ISO → PC o APK para Android](#tus-iso--pc-o-apk-para-android)
+- [Tus ISO → PC](#tus-iso--pc)
 - [Capturas del launcher](#capturas-del-launcher)
 - [¿Qué es este remake?](#qué-es-este-remake)
 - [Empezar en Windows](#empezar-en-windows)
@@ -30,12 +28,11 @@
 - [Ejecutar desde el código fuente](#ejecutar-desde-el-código-fuente)
 - [Compilaciones automáticas](#compilaciones-automáticas)
 - [Estado del proyecto y avisos](#estado-del-proyecto-y-avisos)
-- [Crear tu APK Android](#crear-tu-apk-android)
 
 ## Ventajas
 
-- **PC o Android desde el mismo launcher.** Prepara tus juegos para Windows u obtén el APK público Android junto con un paquete privado de recursos. Impórtalo una vez en Android y consérvalo al actualizar la aplicación.
-- **Duelos en red en Joey sin DirectPlay.** La conexión moderna por red local sustituye ese componente antiguo de Windows. Conexión probada entre PC y PC, y entre PC y Android.
+- **Launcher de PC con conversión local.** Selecciona tus imágenes de disco o carpetas instaladas y el launcher prepara tus juegos para Windows en tu equipo.
+- **Duelos en red en Joey sin DirectPlay.** La conexión moderna por red local sustituye ese componente antiguo de Windows. Conexión probada entre PC y PC.
 - **Portable.** Lleva juntos el EXE y su carpeta **`PoC Data`**: ahí viajan tus recursos, partidas y ajustes.
 - **Recursos más livianos.** Las imágenes WebP sin pérdida y el audio OGG reducen el espacio ocupado. La biblioteca de Yugi probada ocupa aproximadamente **un 44% menos** que su versión convertida sin comprimir. El ahorro depende del juego y la edición.
 - **Decoraciones para 16:9.** Los laterales decorados rodean el área de duelo original de 4:3 en las vistas compatibles de Yugi, Kaiba y Joey, cada uno con su propio fondo.
@@ -43,7 +40,6 @@
 - **Colección compartida, mazos separados.** Conserva tus cartas entre juegos con las compatibilidades originales: Yugi usa su catálogo, Kaiba también las de Yugi y Joey las de los tres. Cada título mantiene su mazo activo.
 - **Elige el ritmo y la imagen.** Selecciona 30 FPS, 60 FPS o la frecuencia de tu monitor; aspecto estirado, 4:3 original o fondos decorativos; y velocidad normal o 2×.
 - **Juego rápido opcional en los tres juegos.** Omite escenas de personajes, voces y barridos, conservando la música y los efectos. [Ver ajustes del launcher](#ajustes-del-launcher).
-- **Las mismas opciones de juego en Android.** Aspecto, FPS, simulación, juego rápido y traducciones de cartas acompañan los controles táctiles, el scroll, el arrastre y la selección de sacrificios existentes.
 
 ## Ajustes del launcher
 
@@ -68,17 +64,11 @@ se abre maximizado desde el principio y puedes redimensionar la ventana o usar
 
 Actívalo con conexión para preparar el paquete local. La primera descarga es de aproximadamente **110 MB**; después, los textos funcionan sin conexión. Abrir el launcher no inicia descargas. Si la preparación falla, siguen disponibles los textos importados. Puedes desactivar la opción cuando quieras para recuperarlos.
 
-## Tus ISO → PC o APK para Android
+## Tus ISO → PC
 
-Selecciona los ISO o las carpetas instaladas de tus juegos y elige:
+Selecciona los ISO o las carpetas instaladas de tus juegos y pulsa **Compilar**, que aparece al elegir una fuente, para preparar los juegos para Windows.
 
-- **Compilar** aparece al seleccionar una ISO o carpeta y prepara los juegos para Windows.
-- **Android → Crear .pck** prepara un **paquete privado de recursos `.pck`** generado desde tus juegos, que queda con su informe de validación en **`PoC Data/android/pck/`**. También puedes reutilizar los juegos ya preparados.
-- **Android → Descargar APK** baja de GitHub el APK público Android de esta versión.
-
-**Android se prepara desde el launcher.** El APK público lo compila y firma GitHub Actions; el launcher genera el paquete de recursos en tu equipo. El flujo normal no requiere cuentas, SDK Android, JDK, configurar una firma ni acceder a la clave del autor. Instala el APK, ábrelo y selecciona tu `.pck` una vez. Las actualizaciones compatibles posteriores conservan esos recursos y tus partidas. [Preparar tus archivos Android](#crear-tu-apk-android).
-
-Tus ISO y recursos convertidos permanecen en tu equipo; la descarga no incluye datos originales del juego. La conexión de Joey ya se probó entre **PC y PC**, y entre **PC y Android**. El proyecto continúa en alfa: agradecemos comentarios, errores y pruebas con otras ediciones y equipos.
+Tus ISO y recursos convertidos permanecen en tu equipo; la descarga no incluye datos originales del juego. La conexión de Joey ya se probó entre **PC y PC**. El proyecto continúa en alfa: agradecemos comentarios, errores y pruebas con otras ediciones y equipos.
 
 ## Capturas del launcher
 
@@ -215,8 +205,6 @@ python -m unittest discover -s tools/tests -p "test_*import.py" -v
 
 ## Compilaciones automáticas
 
-Los cambios de código compartido requieren revisar la paridad con Android antes de publicar; consulta el [procedimiento de releases Android](docs/ANDROID_UPDATES.md).
-
 Cada release incluye [notas de cambios en inglés](RELEASE_NOTES.md) con sus mejoras y correcciones.
 
 El flujo [Launcher Windows](https://github.com/Johanfer12/Yu-Gi-Oh-Power-of-Chaos-Remake/actions/workflows/build-windows.yml) genera una compilación con cada cambio en `main` y cada solicitud de cambios; también puede iniciarse manualmente. Las etiquetas que empiezan por `v` publican una versión preliminar con EXE, suma SHA-256 y manifiesto de compilación.
@@ -232,38 +220,3 @@ El tema musical del launcher, sus tres fondos externos de duelo y el icono propi
 El código incluye trabajo derivado de ingeniería inversa. Su procedencia y la licencia general siguen en revisión; no se ha asignado una licencia global al repositorio. Publicar estas fuentes no otorga derechos para redistribuir los recursos originales.
 
 Cada componente de terceros conserva su licencia. Consulta [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) y **Licencias** en el launcher, incluidas las fuentes correspondientes de 7-Zip.
-
-## Crear tu APK Android
-
-1. Selecciona tus ISO/carpetas o reutiliza la biblioteca preparada para PC.
-2. Abre **Android → Crear .pck**. Cuando hace falta, el launcher descarga el empaquetador Godot, verifica su SHA-256 y prepara tus recursos privados en tu equipo. Después abre **`PoC Data/android/pck/`**, donde quedan el **`.pck`** y el informe JSON.
-3. Pulsa **Descargar APK** para bajar de GitHub el APK público de esta versión. Copia el APK y el PCK a tu Android.
-4. Instala el APK. Al abrirlo por primera vez, pulsa **Seleccionar paquete .pck** y elige ese archivo. Basta con importarlo una vez; la aplicación guarda su propia copia junto a tus partidas.
-5. **Para añadir otro juego más tarde** (por ejemplo Kaiba después de Yugi): añádelo en el launcher de PC y pulsa otra vez **Crear .pck**; el paquete nuevo incluye todos los juegos preparados. Cópialo al dispositivo y, en el launcher de Android, abre **Configuración → Partida → Importar .pck…**, elígelo y vuelve a abrir la aplicación. Tus partidas y ajustes se conservan.
-
-El flujo normal no requiere cuentas, SDK, JDK, Android Studio ni una firma personal. El APK es la misma aplicación pública, con firma estable, para todos los jugadores. El PCK privado contiene los recursos de tus juegos y no se sube a ningún servicio. La descarga pública no contiene recursos originales ni la clave privada del autor. La primera preparación necesita conexión y espacio libre; las herramientas descargadas se reutilizan.
-
-Android conserva las mismas opciones de imagen y juego que PC, incluidas las traducciones opcionales de nombres y descripciones de las 771 cartas. Los controles táctiles permiten scroll, arrastre y selección nativa de uno o dos monstruos para sacrificios.
-
-### Actualizaciones Android e instalaciones anteriores
-
-Usa el botón de actualizar del launcher Android: desde alpha.19 descarga y verifica el APK dentro de la app y abre el instalador de Android, donde confirmas la actualización. La primera vez, Android pide permitir instalar desde Power of Chaos. **Actualiza la aplicación instalada sin desinstalarla** para conservar su paquete privado, ajustes y partidas. Si la descarga integrada falla, se abre la descarga del APK en el navegador.
-
-Si tienes una instalación antigua, prepara tu PCK desde PC antes de pasar al APK público. Si la firma es distinta, Android no puede instalarlo como actualización. Puedes desinstalar la aplicación antigua si aceptas perder sus datos, instalar el APK público e importar tu PCK una vez. Las actualizaciones públicas compatibles posteriores conservan recursos y partidas sin repetir la importación.
-
-Los usuarios avanzados que necesiten conservar una instalación con otra firma pueden mantener su clave original y la configuración opcional `android-builder.json` para generar actualizaciones compatibles. El actualizador público informa de una firma distinta sin reemplazar la aplicación. Las partidas permanecen en esa instalación mientras se actualice sin desinstalar.
-
-Todo se guarda dentro de la carpeta de datos:
-
-| Contenido Android | Ruta |
-| --- | --- |
-| Herramientas reutilizables y fuentes incluidas | `PoC Data/android/tools/` |
-| PCK privado e informe JSON | `PoC Data/android/pck/` |
-| Registros e informes de cada intento | `PoC Data/android/builds/` |
-| Firma de compilaciones personalizadas anteriores, si se usa | `PoC Data/android/signing/debug.keystore` |
-
-El APK se copia sin modificar sólo después de comprobar su SHA-256 fijado y el informe de validación del PCK privado. Si falla la preparación, no queda una pareja instalable incompleta. Los recursos convertidos temporales se retiran sin modificar tu biblioteca PC. Los fallos conservan detalles en `PoC Data/apk-last-error.log`. Respalda `PoC Data` junto al EXE, especialmente si conservas una firma de compilaciones personalizadas.
-
-La conexión de Joey se probó anteriormente entre PC↔PC y PC↔Android. El nuevo flujo de importación y actualización se validó en el equipo de compilación; todavía no se verificó en un dispositivo Android físico. La fidelidad del motor y el soporte de otras configuraciones siguen en desarrollo.
-
-Para desarrolladores, `tools/configure_android_builder.py --help` permite usar herramientas y una copia Android propias mediante `android-builder.json`. Es una configuración avanzada opcional; el EXE distribuido prepara su entorno desde el launcher.
