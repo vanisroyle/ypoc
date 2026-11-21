@@ -56,7 +56,10 @@ def install_engine(cache: Path) -> Path:
                 print("Descargando y verificando " + name, flush=True)
                 fetch(base + name, archive)
                 with archive.open("rb") as stream:
-                    digest = hashlib.file_digest(stream, "sha512").hexdigest()
+                    hasher = hashlib.sha512()
+                    while chunk := stream.read(1 << 20):
+                        hasher.update(chunk)
+                    digest = hasher.hexdigest()
                 if digest != hashes.get(name):
                     raise ValueError("SHA-512 de Godot no coincide: " + name)
                 with zipfile.ZipFile(archive) as zipped:
