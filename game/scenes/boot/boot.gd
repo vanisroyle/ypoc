@@ -28,7 +28,16 @@ func _ready() -> void:
 	elif start in Game.GAMES:
 		Game.open_title(start)
 	else:
-		Game.open_launcher()
+		# Arranca en el juego mas completo instalado (joey > kaiba > yugi);
+		# el selector sigue accesible desde los menus del juego.
+		var default_game := ""
+		for game in Game.GAMES:
+			if Paths.has_game(game):
+				default_game = game
+		if default_game != "":
+			Game.open_title(default_game)
+		else:
+			Game.open_launcher()
 	queue_free()
 
 
