@@ -161,9 +161,19 @@ func _footer() -> void:
 	bstyle.set_border_width_all(1)
 	bstyle.set_corner_radius_all(4)
 	free.add_theme_stylebox_override("normal", bstyle)
-	free.pressed.connect(func() -> void: Game.open_title("joey"))
+	free.pressed.connect(func() -> void: Game.open_title(_most_complete_game()))
 	add_child(free)
 
 
 func _on_duel(game: String) -> void:
 	Game.start_normal_duel(game)
+
+
+## Juego mas completo instalado (joey > kaiba > yugi), para abrir coleccion y
+## opciones aunque falten discos.
+func _most_complete_game() -> String:
+	var best := ""
+	for game in Game.GAMES:
+		if Paths.has_game(game):
+			best = game
+	return best if best != "" else "yugi"
