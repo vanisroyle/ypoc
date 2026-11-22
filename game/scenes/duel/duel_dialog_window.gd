@@ -39,6 +39,8 @@ const BTN := Vector2i(111, 33)
 var scene: Node
 var duel: Duel
 var game := "yugi"
+## Motor del duelo (bits de entrada); `game` es el paquete de arte.
+var engine := ""
 var type := 0
 var data: Dictionary = {}
 var _text := ""
@@ -134,6 +136,7 @@ func setup(scene_node: Node, the_duel: Duel, game_id: String, text: String) -> v
 	scene = scene_node
 	duel = the_duel
 	game = game_id
+	engine = scene_node.get("game") if scene_node != null and scene_node.get("game") is String else game_id
 	data = duel.dialog_open
 	type = int(data.get("type", 0))
 	_text = text
@@ -341,7 +344,7 @@ func _keyboard_tick() -> void:
 	if _keys & (1 << 6):
 		var picked := _pick(PointerGlide.hover(_pointer + position) - position)
 		if picked >= 0: _activate_item(picked)
-	if _keys & (1 << preload("res://core/duel_input.gd").cancel_slot(game)):
+	if _keys & (1 << preload("res://core/duel_input.gd").cancel_slot(engine if engine != "" else game)):
 		if type == 1: _request_answer(0)
 		elif type == 3 and int(data.get("default", -1)) >= 0:
 			_request_answer(int(data["default"]))

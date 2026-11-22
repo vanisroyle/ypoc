@@ -25,6 +25,8 @@ var duel: Duel
 ## Escena del duelo (normal_duel.gd): ficha de detalle de la carta senalada (DAT_005af708).
 var scene: Node
 var game := "yugi"
+## Motor del duelo (bits de entrada, localizaciones); `game` es el paquete de arte.
+var engine := ""
 var p := 0
 var loc := -1
 ## in_ECX[0xd]: 0 ver, 1 elegir una, 2/3 marcar hasta min(n, 5).
@@ -105,6 +107,7 @@ func setup(scene_node: Node, the_duel: Duel, game_id: String) -> void:
 	scene = scene_node
 	duel = the_duel
 	game = game_id
+	engine = scene_node.get("game") if scene_node != null and scene_node.get("game") is String else game_id
 	var info: Dictionary = duel.list_open
 	p = int(info.get("p", 0))
 	loc = int(info.get("loc", -1))
@@ -197,9 +200,9 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 	elif event is InputEventKey and event.pressed and not event.echo:
 		# FUN_00538770: 3 izquierda, 4 derecha, 6 decidir, 0xc cancelar.
-		var groups: int = preload("res://core/duel_input.gd").slots(event, game)
+		var groups: int = preload("res://core/duel_input.gd").slots(event, engine if engine != "" else game)
 		var bit: int = groups & (0x1e | (1 << 6))
-		if groups & (1 << preload("res://core/duel_input.gd").cancel_slot(game)): bit |= 1 << 12
+		if groups & (1 << preload("res://core/duel_input.gd").cancel_slot(engine if engine != "" else game)): bit |= 1 << 12
 		if bit != 0:
 			_keys |= bit
 			get_viewport().set_input_as_handled()
@@ -495,7 +498,7 @@ func _draw() -> void:
 	var tt := t if t <= 0 else -t
 	var grow := DuelVisualMath.cos_fx(((tt + 0x100) / 2 - 0x80) & 0x1ff) >> 8
 	var from := Vector2i(DuelGeometry.location(p & 1, loc, 0, duel.m.u8(DuelMem.pl(p & 1) + 2)))
-	if game == "joey" and loc == DuelMem.LOC_BANISH: from = Vector2i(DuelGeometry.JOEY_EXCLUDED[p & 1])
+	if (engine if engine != "" else game) == "joey" and loc == DuelMem.LOC_BANISH: from = Vector2i(DuelGeometry.JOEY_EXCLUDED[p & 1])
 	var c := Vector2i((center.x - from.x) * grow >> 8, (center.y - from.y) * grow >> 8) + from
 	var s := Vector2i((size.x * grow) >> 8, (size.y * grow) >> 8)
 	var shown: Rect2 = _blend.at("window", Rect2(c - s / 2, s))

@@ -3,6 +3,8 @@ extends Node2D
 ## 569e10/569fc0 comprueban inutilizacion, nunca ocupacion. Se leen los vinculos
 ## equivalentes del nucleo compartido Yugi, sin cambiar su memoria ni su RNG.
 var states := PackedInt32Array()
+## Paquete de arte del tablero (el rival en el modo combinado).
+var theme := "joey"
 var _sprites: Array[Sprite2D] = []
 var _textures: Array[Texture2D] = []
 var _last_tick := -1
@@ -11,7 +13,7 @@ func _init() -> void:
 	states.resize(10)
 	for index in 10:
 		var sprite := Sprite2D.new()
-		sprite.position = DuelGeometry.zone(index / 5, index % 5)
+		sprite.position = DuelGeometry.zone(index / 5, index % 5, theme)
 		sprite.visible = false
 		add_child(sprite)
 		_sprites.append(sprite)
@@ -51,4 +53,5 @@ func refresh(duel: Duel, tick: int) -> void:
 		elif states[index] == 0: states[index] = 1
 		else: states[index] = mini(7, states[index] + elapsed)
 		_sprites[index].visible = enabled
+		_sprites[index].position = DuelGeometry.zone(index / 5, index % 5, theme)
 		if enabled and _textures.size() == 4: _sprites[index].texture = _textures[states[index] / 2]

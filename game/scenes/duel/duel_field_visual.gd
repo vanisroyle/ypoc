@@ -71,7 +71,11 @@ static func _texture(game: String, filename: String) -> Texture2D:
 static func texture_for(game: String, id: int) -> Texture2D:
 	# IDs sin entrada nativa no son archivos perdidos. Una entrada válida sigue
 	# pasando por Assets.texture, que avisa si falta su PNG esperado.
-	if id < 0 or id >= int(TERRAIN_COUNTS.get(game, 0)): return null
+	if id < 0: return null
+	var count := int(TERRAIN_COUNTS.get(game, 0))
+	if count <= 0: return null
+	# Motor unificado: un terreno sin arte en el tema del rival cae al fondo normal.
+	if id >= count: id = 0
 	return _texture(game, resource_name(id))
 
 static func intermediate_texture(game: String) -> Texture2D:
@@ -198,7 +202,7 @@ static func render(owner: Node2D, event: Dictionary, frame: int) -> bool:
 	if event.get("mode", "") != "field_change": return false
 	var counter := frame * 8
 	var id := int(event.get("terrain", 0))
-	var game: String = str(event.get("game", owner.game))
+	var game: String = str(event.get("theme", event.get("game", owner.get("theme") if owner.get("theme") else owner.game)))
 	if counter >= 64 and counter < 320:
 		var value := counter - 64
 		if id == 0: value = 256 - value
