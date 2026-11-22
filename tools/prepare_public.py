@@ -10,10 +10,10 @@ import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
 TOP = {"docs/PRIVACY.md","RELEASE_NOTES.md", "README.md", "THIRD_PARTY_NOTICES.md", ".gitattributes", "docs/LAUNCHER_SETTINGS.md", "docs/CARD_TRANSLATIONS.md", "game/translations/spanish-card-catalog.json"}
-TOOL_TOP = {"tools/pyproject.toml", "tools/prepare_public.py", "tools/build_windows.py", "tools/build_handheld.sh", "tools/importer_entry.py", "tools/trace_logo_contours.py",
+TOOL_TOP = {"tools/pyproject.toml", "tools/prepare_public.py", "tools/build_windows.py", "tools/build_handheld.sh", "tools/build_switch.sh", "tools/importer_entry.py", "tools/trace_logo_contours.py",
             "tools/tests/test_public_import.py", "tools/tests/test_media_import.py",
             "tools/tests/test_compact_import.py", "tools/tests/test_updater.py", "tools/tests/test_card_translations.py", "tools/tests/test_reviewed_card_pack.py",
-            ".github/workflows/build-windows.yml", "game/export_presets.cfg"}
+            ".github/workflows/build-windows.yml", "game/export_presets.cfg", "game/godot-switch-nro.cfg"}
 OWN_ASSETS = {"game/assets/music/launcher_theme.mp3",
               "game/assets/backgrounds/yugi_duel.jpg",
               "game/assets/backgrounds/joey_duel.png",
