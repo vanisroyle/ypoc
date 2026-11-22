@@ -101,8 +101,6 @@ func _show(page: String) -> void:
 	match page:
 		"duel":
 			_page_duel()
-		"deck":
-			_page_decks()
 		_:
 			_page_main()
 
@@ -131,7 +129,9 @@ func _page_main() -> void:
 
 	var items := [
 		["duel", "Duelo" if Assets.lang == "s" else "Duel", func() -> void: _show("duel")],
-		["deck", "Constructor de mazo" if Assets.lang == "s" else "Deck Construction", func() -> void: _show("deck")],
+		["deck", "Constructor de mazo" if Assets.lang == "s" else "Deck Construction", func() -> void:
+			_sfx("decide")
+			Game.open_deck_editor(_deck_game())],
 		["list", "Lista de cartas" if Assets.lang == "s" else "Card List", func() -> void:
 			_sfx("decide")
 			Game.open_card_list(_menu_game())],
@@ -188,33 +188,13 @@ func _page_duel() -> void:
 			_show("main")))
 
 
-func _page_decks() -> void:
-	_page_title("CONSTRUCTOR DE MAZO" if Assets.lang == "s" else "DECK CONSTRUCTION")
-	var info := Label.new()
-	info.text = ("Cada rival usa su propio mazo; las cartas permitidas son las de su juego."
-		if Assets.lang == "s" else "Each rival uses its own deck; usable cards follow that game's pool.")
-	info.add_theme_color_override("font_color", Color(0.75, 0.7, 0.6))
-	info.add_theme_font_size_override("font_size", 14)
-	info.position = Vector2(0, 90)
-	info.size = Vector2(800, 40)
-	info.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_root.add_child(info)
-
-	var y := 160
-	for rival in RIVALS:
-		var game: String = rival["game"]
-		var installed := Paths.has_game(game)
-		var deck: Dictionary = SaveData.deck(game) if installed else {}
-		var count := int(deck.get("main", []).size())
-		var text := ("Mazo de %s  —  %d cartas" if Assets.lang == "s" else "%s deck  —  %d cards") % [rival["name"], count]
-		_root.add_child(_menu_button(text, Vector2(240, y), Vector2(320, 52), func() -> void:
-			_sfx("decide")
-			Game.open_deck_editor(game), not installed))
-		y += 66
-	_root.add_child(_menu_button("VOLVER" if Assets.lang == "s" else "BACK",
-		Vector2(330, 520), Vector2(140, 40), func() -> void:
-			_back_sfx()
-			_show("main")))
+## Mazo que se edita por defecto: el del proximo rival de la campaña; sin el, el del
+## juego mas completo (joey tiene el pool completo de las 1113 cartas).
+func _deck_game() -> String:
+	var next := SaveData.campaign_next()
+	if next != "" and Paths.has_game(next):
+		return next
+	return _menu_game()
 
 
 # --- pagina de duelo: paneles de rival --------------------------------------------------------
