@@ -106,6 +106,12 @@ func _ready() -> void:
 		for g in GAMES:
 			for f in AI_DECKS.files(g):
 				print("ai_decks: ", g, "/", f)
+	# --selfplay=<n>: lote de duelos CPU-CPU sin escena que vuelca un JSONL para
+	# tools/selfplay/train.py (herramienta de desarrollo, excluida de los pck).
+	if Paths.cmdline_value("selfplay") != "":
+		var code: int = load("res://selfplay/selfplay_runner.gd").main()
+		get_tree().quit(code)
+		return
 
 
 func _add_key_action(action: String, key: Key) -> void:
