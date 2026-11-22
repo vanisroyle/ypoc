@@ -186,7 +186,7 @@ static func _portrait(d: Dictionary, layout: String, voice: String) -> Dictionar
 	d["wait_voice"] = true
 	d["layout"] = layout
 	d["center"] = Vector2(525, 300)
-	var portrait_game: String = str(d.get("game", "yugi"))
+	var portrait_game: String = str(d.get("theme", d.get("game", "yugi")))
 	if not Assets.exists("%s/bust_up/%s.layout.json" % [portrait_game, layout]): return {}
 	d["portrait_game"] = portrait_game
 	d["sound"] = "%s/voice/internal/%s.wav" % [portrait_game, voice]

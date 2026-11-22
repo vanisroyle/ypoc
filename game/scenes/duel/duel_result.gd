@@ -19,6 +19,8 @@ const CARD_H := 290
 const RewardInput = preload("res://core/duel_input.gd")
 
 var game := "yugi"
+## Motor del duelo (en modo combinado distinto del paquete de arte `game`).
+var engine := ""
 var result := 0
 var _state := 0
 var _banner := 0
@@ -54,8 +56,9 @@ var _surrendered := false
 
 
 ## `winner`: 1 gana el jugador, 2 la CPU, 3 empate (0x53d650).
-func setup(game_id: String, winner: int, duel_flags: int = 0, surrendered := false) -> void:
+func setup(game_id: String, winner: int, duel_flags: int = 0, surrendered := false, engine_id := "") -> void:
 	game = game_id
+	engine = engine_id if engine_id != "" else game_id
 	result = winner
 	_surrendered = surrendered
 	z_index = 70
@@ -70,14 +73,14 @@ func setup(game_id: String, winner: int, duel_flags: int = 0, surrendered := fal
 		_save_cards()
 	# 435410 estado1, DAT_a114b4 bit8. Joey 447000 estado1: tras rendirse (a54e5c & 0x40)
 	# tampoco pregunta por la repetición.
-	if (duel_flags & 0x100) != 0 or (_surrendered and game == "joey"): _after_replay()
+	if (duel_flags & 0x100) != 0 or (_surrendered and engine == "joey"): _after_replay()
 
 
 ## 0x433e50: estadisticas comunes y racha (DAT_00a11218, DAT_00a11215/16).
 func _record(duel_flags := 0) -> void:
 	# 446df0 con a54e5c & 0x40 (Joey) y 433e50 con DAT_a114b4 bit8 (Yugi/Kaiba, comando0x40):
 	# la rendicion no suma victorias/derrotas, racha ni nivel; una victoria previa deja la racha a 0.
-	if (_surrendered and game == "joey") or (game != "joey" and (duel_flags & 0x100) != 0):
+	if (_surrendered and engine == "joey") or (engine != "joey" and (duel_flags & 0x100) != 0):
 		SaveData.ensure_game(game)
 		var surrendered_stats: Dictionary = SaveData.data["stats"][game]
 		if int(surrendered_stats.get("streak_last", 0)) == 1: surrendered_stats["streak"] = 0

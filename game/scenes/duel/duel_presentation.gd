@@ -12,6 +12,8 @@ const SIZE := DuelGeometry.FIELD_SIZE
 ## Capa del retrato de reaccion, sobre las cifras de dano (capa 100 en duel_basic_effects).
 const PORTRAIT_Z := 110
 var game: String
+## Arte/interfaz a dibujar (el rival en el modo combinado); `game` es el motor.
+var theme: String
 var hidden_hand: bool
 var pending: Array[Dictionary] = []
 var overlays: Array[Dictionary] = []
@@ -63,6 +65,7 @@ var pointer := Vector2.ZERO
 
 func _init(game_id: String, conceal_hand: bool = false) -> void:
 	game = game_id
+	theme = game_id
 	hidden_hand = conceal_hand
 	z_index = 50
 
@@ -190,7 +193,7 @@ func busy() -> bool:
 	return not active.is_empty() or not pending.is_empty() or (_start_banner_shade and _shade_moving())
 
 func zone(p: int, z: int) -> Vector2:
-	return DuelGeometry.zone(p, z, game)
+	return DuelGeometry.zone(p, z, theme)
 
 func hand(p: int, i: int, count: int) -> Vector2:
 	return hand_positions.get(p * 256 + i, DuelGeometry.hand(p, i, count))
@@ -204,9 +207,9 @@ func packed_position(value: int, duel: Duel) -> Vector2:
 
 func pile_object_position(p: int, loc: int, index: int) -> Vector2:
 	if loc == DuelMem.LOC_BANISH:
-		return DuelGeometry.JOEY_EXCLUDED[p] if game == "joey" else DuelGeometry.location(p, loc)
+		return DuelGeometry.JOEY_EXCLUDED[p] if theme == "joey" else DuelGeometry.location(p, loc)
 	var count := int(table.piles[p][loc]["count"])
-	if game == "joey": return preload("res://scenes/duel/joey_pile.gd").object_position(p, loc, index, count)
+	if theme == "joey": return preload("res://scenes/duel/joey_pile.gd").object_position(p, loc, index, count)
 	return preload("res://scenes/duel/classic_pile.gd").object_position(p, loc, index, count)
 
 func enqueue(e: Dictionary, duel: Duel) -> void:
@@ -216,7 +219,7 @@ func enqueue(e: Dictionary, duel: Duel) -> void:
 		# Y45d840/Ka45f510: con una cantidad de combate retenida solo se libera el contador.
 		if _lp_number.is_empty():
 			var sound := "damage" if int(e.amount) < 0 else "life_up"
-			Audio.play_sfx("%s/voice/internal/%s.wav" % [game, sound])
+			Audio.play_sfx("%s/voice/internal/%s.wav" % [theme, sound])
 		return
 	if kind == "lp_popup":
 		if not _lp_number.has(p):
@@ -235,7 +238,7 @@ func enqueue(e: Dictionary, duel: Duel) -> void:
 		table.revision += 1
 		return
 	if kind == "pile_highlight":
-		if game in ["yugi", "kaiba"]: ClassicPile.start(table.piles[p][e["loc"]], 8)
+		if theme in ["yugi", "kaiba"]: ClassicPile.start(table.piles[p][e["loc"]], 8)
 		return
 	if kind == "pile_flip":
 		if game in ["yugi", "kaiba"]:
@@ -295,7 +298,7 @@ func enqueue(e: Dictionary, duel: Duel) -> void:
 		effect = BasicEffects.normalize(effect, duel)
 		overlays.append({"event":effect, "frame":0})
 		played["special"] = played.get("special", 0) + 1
-		Audio.play_sfx("%s/voice/internal/reborn.wav" % game)
+		Audio.play_sfx("%s/voice/internal/reborn.wav" % theme)
 		_render_frame()
 		return
 	if kind == "tutorial_place":
@@ -358,19 +361,20 @@ func enqueue(e: Dictionary, duel: Duel) -> void:
 	# 0xe9 (fusion): antes del efecto, el paso 0 de 0x406450 / 0x406710 pide una reaccion
 	# (vacia en Yugi; reaction12 en Kaiba).
 	if kind == "cmd" and e.get("op", 0) == 0xe9:
-		var reaction := PortraitEffects.normalize(d.merged({"game": game}), duel)
+		var reaction := PortraitEffects.normalize(d.merged({"game": game, "theme": theme}), duel)
 		if not reaction.is_empty():
 			pending.append(reaction)
 			if active.is_empty(): _begin()
 		return # El efecto se crea desde el paso 1 del nucleo, tras esta reaccion.
 	if kind in ["reaction_destroy", "reaction_flip", "reaction_lp", "reaction_card", "reaction_activation", "phase"] or (kind == "cmd" and e.get("op", 0) in [0x07, 0xad, 0xe6]):
 		d["game"] = game
+		d["theme"] = theme
 		if kind == "phase":
 			# 0x460b00 -> 0x460a10: mismo jugador y fase de batalla: battle_turn.wav (0x10000011).
 			if _phase_player == p and int(e.get("phase", -1)) == 3:
 				d["sound_file"] = "battle_turn"
 			if _phase_player >= 0 and _phase_player != p:
-				pending.append(PortraitEffects.normalize({"kind": "next_turn", "p": _phase_player, "game": game}, duel))
+				pending.append(PortraitEffects.normalize({"kind": "next_turn", "p": _phase_player, "game": game, "theme": theme}, duel))
 				if game in ["yugi", "kaiba"]:
 					# 460bb0 (Kaiba igual): con otro jugador el panel cuenta +0x168 hasta 0x200 (64 ticks) antes de
 					# la fase y 460b80 espera todo ese tramo; el dibujo del cambio dura 48.
@@ -621,6 +625,7 @@ func enqueue(e: Dictionary, duel: Duel) -> void:
 		"cmd11":
 			d["mode"] = "field_change"
 			d["game"] = game
+			d["theme"] = theme
 			# 0x4359a0: solo si cambia el valor suena scene_change.wav (0x10000012).
 			if int(e.get("a", -1)) != _field_value:
 				d["sound_file"] = "scene_change"
@@ -650,9 +655,9 @@ func enqueue(e: Dictionary, duel: Duel) -> void:
 			# 0x21) pide en esos mismos sitios la misma voz: 0x10000047/48 = Ka39/40 (0x406570) y
 			# 0x1000004a = Ka42 (0x403060).
 			var file := str(e.get("native_sound_file", voice_file(int(e.get("id", 0)))))
-			if Audio.voice_disabled("%s/voice/internal/%s.wav" % [game, file]): return
+			if Audio.voice_disabled("%s/voice/internal/%s.wav" % [theme, file]): return
 			if kind == "sound" and e.has("native_sound_file"):
-				if file != "": Audio.play_sfx("%s/voice/internal/%s.wav" % [game, file])
+				if file != "": Audio.play_sfx("%s/voice/internal/%s.wav" % [theme, file])
 				return # 5c03d0 no crea un objeto que bloquee el motor.
 			if file == "": return
 			d["mode"] = "voice"
@@ -661,14 +666,14 @@ func enqueue(e: Dictionary, duel: Duel) -> void:
 			# "voice" es el objeto 0x401bc0 (0x4022f0 al colocar, 0x4062b0 al cambiar de
 			# posicion): el duelo espera a que acabe la voz. "sound" (0x402d30, fin de turno
 			# 0x402710) llama directo a 0x583e10 y no espera.
-			d["frames"] = PortraitEffects.voice_frames(game, file) if kind == "voice" else 1
+			d["frames"] = PortraitEffects.voice_frames(theme, file) if kind == "voice" else 1
 		"bgm", "music_by_lp":
 			# El motor emite IDs de Yugi; cada ejecutable elige su propia tabla y modo.
 			var mode := Game.duel_mode if duel.game_mode == 0 else duel.game_mode
 			if e.has("native_music_mode"): mode = int(e["native_music_mode"])
 			if duel.tutorial_interactive: mode = 6
 			d["mode"] = "music"
-			d["music"] = preload("res://scenes/duel/duel_music.gd").path(game, mode, [duel.m.u16(DuelMem.pl(0)), duel.m.u16(DuelMem.pl(1))])
+			d["music"] = preload("res://scenes/duel/duel_music.gd").path(theme, mode, [duel.m.u16(DuelMem.pl(0)), duel.m.u16(DuelMem.pl(1))])
 			# Con un retrato que pone su musica (music_once: m_sum, m_summon...) activo o pendiente, la
 			# pista del duelo vuelve al terminar el retrato (Joey: 33 ticks despues de m_sum en el
 			# cotejo por valores de la tanda variada, 30-10-2026).
@@ -755,7 +760,7 @@ func enqueue(e: Dictionary, duel: Duel) -> void:
 					d["counter"] = 0
 					d["released"] = false
 					_chain[args[1]] = d
-					Audio.play_sfx("%s/voice/internal/chain.wav" % game)
+					Audio.play_sfx("%s/voice/internal/chain.wav" % theme)
 					_render_frame()
 					return
 				0x5a:
@@ -804,8 +809,8 @@ func enqueue(e: Dictionary, duel: Duel) -> void:
 						# 0x43bff0 pide exodia_a..e al empezar cada fase del contador (c = fotograma
 						# * 4): 0, 0x13c, 0x1fc, 0x23c y 0x344 (exodia_a ya es el sonido del modo).
 						# Kaiba 43c710: mismos umbrales 13c/1fc/23c/344 y paso4.
-						d["sounds"] = [[79, "%s/voice/internal/exodia_b.wav" % game], [127, "%s/voice/internal/exodia_c.wav" % game],
-								[143, "%s/voice/internal/exodia_d.wav" % game], [209, "%s/voice/internal/exodia_e.wav" % game]]
+						d["sounds"] = [[79, "%s/voice/internal/exodia_b.wav" % theme], [127, "%s/voice/internal/exodia_c.wav" % theme],
+								[143, "%s/voice/internal/exodia_d.wav" % theme], [209, "%s/voice/internal/exodia_e.wav" % theme]]
 						# Jo454010: cada pieza tiene su propio sonido (ids13..17).
 						if game == "joey":
 							for piece in 5: d["sounds"].append([piece * 16, "joey/voice/internal/exodia_a%d.wav" % (piece + 1)])
@@ -843,6 +848,7 @@ func enqueue(e: Dictionary, duel: Duel) -> void:
 			d["frames"] = 1
 	if d["mode"] == "field_change": d = FieldEffects.normalize(d, duel)
 	d["game"] = game # Las geometrías propias de cada juego se resuelven al normalizar.
+	d["theme"] = theme
 	d = BasicEffects.normalize(d, duel)
 	# Joey44f630 agrega su efecto sin ocultar el objeto418ef0 ya colocado.
 	if d.get("native_base_visible", false): d["hide"] = []
@@ -867,6 +873,7 @@ func enqueue(e: Dictionary, duel: Duel) -> void:
 		d["hide"] = [d["center"]]
 	if int(d.get("frames", 0)) <= 0: return
 	d["game"] = game
+	d["theme"] = theme
 	d = SpecialEffects.normalize(d, duel)
 	if d["mode"] == "destroy_effect":
 		d["native_lifetime"] = 16
@@ -906,7 +913,7 @@ func _exodia_hand(p: int, duel: Duel) -> Dictionary:
 			"center": Vector2(525, 300)}
 	if p == 1:
 		d["sound_file"] = "yugi_65"
-		frames = maxi(frames, PortraitEffects.voice_frames(game, "yugi_65"))
+		frames = maxi(frames, PortraitEffects.voice_frames(theme, "yugi_65"))
 	d["frames"] = frames
 	return d
 
@@ -1081,7 +1088,7 @@ func _tick_sacrifice() -> void:
 		if s["release"] or s["counter"] <= 0x7f:
 			s["counter"] += 8
 		if s["counter"] == 0x88 and s.get("kind", "") != "fusion":
-			Audio.play_sfx("%s/voice/internal/ikenie.wav" % game)
+			Audio.play_sfx("%s/voice/internal/ikenie.wav" % theme)
 		# 464bb0: la marca de fusion vive mientras su contador < 0x180.
 		if s["counter"] >= (0x180 if s.get("kind", "") == "fusion" else 0x181):
 			_sacrifice.erase(key)
@@ -1201,7 +1208,7 @@ func advance(delta: float) -> void:
 		if start_shade_moving: continue
 		if frame == 0 and game in ["yugi", "kaiba"] and active.get("mode", "") == "banner" and int(active.get("op", 0)) == 0x14:
 			# 438d20/439480 piden start en el primer avance del rótulo, tras abrir el sombreado.
-			Audio.play_sfx("%s/voice/internal/start.wav" % game)
+			Audio.play_sfx("%s/voice/internal/start.wav" % theme)
 		frame += 1
 		if active.has("counter_object"):
 			var counter_object: Dictionary = active["counter_object"]
@@ -1227,7 +1234,7 @@ func advance(delta: float) -> void:
 			_finish_objects()
 			# 0x43a970: el movimiento del comando 0x84 suena equip.wav al llegar a 0xc0.
 			if active.get("kind", "") == "cmd84":
-				Audio.play_sfx("%s/voice/internal/equip.wav" % game)
+				Audio.play_sfx("%s/voice/internal/equip.wav" % theme)
 			if active.has("native_lifetime"):
 				overlays.append({"event": active.duplicate(true), "frame": frame})
 			_finish_music()
@@ -1270,7 +1277,7 @@ func _active_finished() -> bool:
 		# La demo espera la duración de la voz aunque el dispositivo termine el búfer antes.
 		if _is_kaiba_demo() and Audio.level > 0 and frame < int(active.get("frames", 0)):
 			return false
-		var path: String = active.get("sound", "%s/voice/internal/%s.wav" % [game, active.get("sound_file", "")])
+		var path: String = active.get("sound", "%s/voice/internal/%s.wav" % [theme, active.get("sound_file", "")])
 		if active.get("mode", "") == "portrait_native":
 			if frame < 33: return false
 			if active.has("sound_after"):
@@ -1545,7 +1552,7 @@ func _begin() -> void:
 		var hit: bool = not active.get("shake_cards", []).is_empty()
 		var damage := int(active["damage"][0]) != 0 or int(active["damage"][1]) != 0
 		if hit or damage:
-			active["sounds"] = [[32 if active.get("reflection", false) else 0, "%s/voice/internal/damage.wav" % game]]
+			active["sounds"] = [[32 if active.get("reflection", false) else 0, "%s/voice/internal/damage.wav" % theme]]
 	if mode == "banner":
 		_shade_on = true
 		# Joey 451b80 (fin) prepara el sombreado de 5f3400 igual que 4516a0 (inicio): el cartel
@@ -1564,11 +1571,11 @@ func _begin() -> void:
 			sound = ""
 			# Kaiba y Joey: m_win / m_lose (ids 0xa/0xb y 9/0xa de sus tablas).
 			var win := int(active.get("args", [0])[0]) == 0
-			var track := ("j_win" if win else "j_lose") if game == "yugi" else ("m_win" if win else "m_lose")
-			Audio.play_music("%s/voice/stream/%s.wav" % [game, track], false)
+			var track := ("j_win" if win else "j_lose") if theme == "yugi" else ("m_win" if win else "m_lose")
+			Audio.play_music("%s/voice/stream/%s.wav" % [theme, track], false)
 	if active.get("native_silent", false): sound = ""
-	if sound != "": Audio.play_sfx("%s/voice/internal/%s.wav" % [game, sound])
-	if active.get("sound_file", "") != "": Audio.play_sfx("%s/voice/internal/%s.wav" % [game, active["sound_file"]])
+	if sound != "": Audio.play_sfx("%s/voice/internal/%s.wav" % [theme, sound])
+	if active.get("sound_file", "") != "": Audio.play_sfx("%s/voice/internal/%s.wav" % [theme, active["sound_file"]])
 	if mode == "music" and _restore_music == "":
 		Audio.play_music(active["music"])
 	if active.get("music_once", "") != "": Audio.play_music(active["music_once"], false)
@@ -1591,7 +1598,7 @@ func voice_file(id: int) -> String:
 
 func _finish_music() -> void:
 	if active.get("mode", "") == "joey_summon" and _duel_ref != null:
-		Audio.play_music(load("res://scenes/duel/duel_music.gd").path(game, _duel_ref.game_mode if _duel_ref.game_mode != 0 else Game.duel_mode, [displayed_lp[0], displayed_lp[1]]))
+		Audio.play_music(load("res://scenes/duel/duel_music.gd").path(theme, _duel_ref.game_mode if _duel_ref.game_mode != 0 else Game.duel_mode, [displayed_lp[0], displayed_lp[1]]))
 	if active.get("mode", "") in ["summon_portrait", "blueeyes_portrait", "gofu_portrait"]:
 		Audio.stop_music()
 		if _restore_music != "": Audio.play_music(_restore_music)
@@ -1603,7 +1610,7 @@ func _clear() -> void:
 	_snap_dirty = true
 
 func _asset(name: String, center: Vector2, scale_factor: float = 1.0, alpha: float = 1.0, rotation_value: float = 0.0, folder: String = "effect") -> Sprite2D:
-	var path := "%s/duel/%s/%s.png" % [game, folder, name]
+	var path := "%s/duel/%s/%s.png" % [theme, folder, name]
 	var texture := Assets.texture(path)
 	if texture == null: return null
 	var sprite := Sprite2D.new()

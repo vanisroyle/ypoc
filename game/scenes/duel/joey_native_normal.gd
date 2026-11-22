@@ -14,17 +14,21 @@ func _ready() -> void:
 	# Evita cargar WAV durante los cambios de LP, el retrato y el cartel de resultado.
 	for track in ["m_furi", "m_yuri", "m_sum", "m_win", "m_lose"]:
 		Audio.preload_music("joey/voice/stream/%s.wav" % track)
+	if theme != "joey":
+		for track in ["j_win" if theme == "yugi" else "m_win", "j_lose" if theme == "yugi" else "m_lose"]:
+			Audio.preload_music("%s/voice/stream/%s.wav" % [theme, track])
 	if DisplayServer.get_name() != "headless":
 		# La primera invocación también carga voz, ojos y boca en el tick del retrato.
 		var portraits := preload("res://scenes/duel/duel_portrait_effects.gd")
-		for voice in ["joey_04", "joey_05", "joey_06"]:
-			portraits.voice_ms("joey/voice/internal/%s.wav" % voice)
+		if theme == "joey":
+			for voice in ["joey_04", "joey_05", "joey_06"]:
+				portraits.voice_ms("joey/voice/internal/%s.wav" % voice)
 		for name in ["reaction08", "reaction13"]:
-			var layout_path := "joey/bust_up/%s.txt" % name
+			var layout_path := "%s/bust_up/%s.txt" % [theme, name]
 			if not Assets.exists(layout_path.trim_suffix(".txt") + ".layout.json"): continue
 			var layout := Assets.layout(layout_path)
 			for index in layout.items.size():
-				var resource := "joey/bust_up/" + layout.resource(index)
+				var resource := "%s/bust_up/" % theme + layout.resource(index)
 				if not resource.ends_with("/null.bmp") and Assets.exists(resource): Assets.texture(resource)
 	if Game.joey_demo:
 		var label := DuelDemoLabel.new()
