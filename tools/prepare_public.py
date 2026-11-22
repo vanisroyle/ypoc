@@ -56,7 +56,7 @@ def prepare(output: Path) -> dict:
         relative = source.relative_to(ROOT)
         dest = output / relative
         dest.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(source, dest)
+        shutil.copy2(source, dest)
         if relative.as_posix() not in OWN_ASSETS | LAUNCHER_ART | README_SCREENSHOTS:
             dest.write_bytes(dest.read_bytes().replace(b"\r\n", b"\n"))
         manifest[relative.as_posix()] = hashlib.sha256(dest.read_bytes()).hexdigest()
