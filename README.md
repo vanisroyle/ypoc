@@ -29,7 +29,7 @@ engines in Godot and unifies the shell around them:
   rivals stay open for rematches, and Joey keeps his seven AI levels.
 - **Expanded rival AI**: each rival keeps their classic decks plus extra ones —
   two generated competitive builds per rival (beatdown and bastion) and any
-  community decks you drop in `PoC Data/resources/ai_decks/<rival>/` (`.ydc` or
+  community decks you drop in `PoC Data/ai_decks/<rival>/` (`.ydc` or
   `.json`). The AI reaches for the extra pool more often as your win streak
   grows.
 - **One collection**: all 1,113 cards obtainable across the three games feed a

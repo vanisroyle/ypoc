@@ -16,7 +16,8 @@ const STAPLES := ["raigeki", "dark hole", "monster reborn", "pot of greed",
 
 
 static func dir_for(game: String) -> String:
-	return Paths.data_dir.path_join("ai_decks").path_join(game)
+	# storage_dir, no data_dir: en la web data_dir es res://webdata (solo lectura).
+	return Paths.storage_dir.path_join("ai_decks").path_join(game)
 
 
 ## Prepara el directorio: convierte .ydc sueltos y escribe los mazos generados.
@@ -87,7 +88,7 @@ static func _generate(game: String, dir: String) -> void:
 					break
 	var low := mons.filter(func(c): return int(c.get("level", 0)) <= 4)
 	var atk := low.duplicate()
-	atk.sort_custom(func(a, b): return int(a.get("attack", 0)) > int(b.get("attack", 0)))
+	atk.sort_custom(func(a, b): return int(a.get("atk", 0)) > int(b.get("atk", 0)))
 	_save(dir.path_join(GEN + "beatdown.json"), _fill(atk, 22, staples, 40))
 	var def_: Array = mons.duplicate()
 	def_.sort_custom(func(a, b): return int(a.get("defense", 0)) > int(b.get("defense", 0)))
