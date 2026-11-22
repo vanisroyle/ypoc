@@ -321,10 +321,12 @@ func _start_result() -> void:
 	# Estado 7 de 0x435410: match sin decidir -> escena 10 y siguiente duelo; si no, la salida
 	# de Yugi con el resultado global. La musica la gestiona Game: en Yugi sigue sonando.
 	_result.finished.connect(func() -> void:
+		# Game.current_game es el rival real; `game` solo dice que motor corre la escena
+		# (en el juego combinado siempre es Joey, cualquiera sea el oponente).
 		if Game.duel_mode == 1 and Game.match_outcome == 0:
-			Game.continue_match(game)
+			Game.continue_match(Game.current_game)
 		else:
-			Game.finish_normal_duel(game, Game.match_outcome if Game.duel_mode in [0, 1, 3] else winner))
+			Game.finish_normal_duel(Game.current_game, Game.match_outcome if Game.duel_mode in [0, 1, 3] else winner))
 	add_child(_result)
 
 
