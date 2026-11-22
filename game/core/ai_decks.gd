@@ -5,6 +5,8 @@ extends RefCounted
 ## cuando el jugador encadena victorias.
 
 const GEN := "_gen_v1_"
+## Mazos de la comunidad empaquetados con el juego (los genera tools/gen_ai_decks.py).
+const BUNDLED := "res://ai_decks"
 ## Staples del formato PoC reconocibles por nombre ingles (en minusculas).
 const STAPLES := ["raigeki", "dark hole", "monster reborn", "pot of greed",
 		"change of heart", "megamorph", "fissure", "giant trunade", "heavy storm",
@@ -29,14 +31,17 @@ static func ensure(game: String) -> void:
 		_generate(game, dir)
 
 
+## Rutas de mazos extra: los empaquetados en res://ai_decks/<juego>/ y los del
+## usuario en <storage>/ai_decks/<juego>/ (generados + .ydc importados).
 static func files(game: String) -> PackedStringArray:
 	ensure(game)
 	var out := PackedStringArray()
-	var d := DirAccess.open(dir_for(game))
-	if d == null: return out
-	for f in d.get_files():
-		if f.ends_with(".json"):
-			out.append(f)
+	for base in [BUNDLED.path_join(game), dir_for(game)]:
+		var d := DirAccess.open(base)
+		if d == null: continue
+		for f in d.get_files():
+			if f.ends_with(".json") or f.ends_with(".json.import"):
+				out.append(base.path_join(f.trim_suffix(".import")))
 	return out
 
 
@@ -51,7 +56,11 @@ static func pick(game: String, draw: Callable) -> Dictionary:
 	var list := files(game)
 	for n in mini(list.size(), 4):
 		var f := list[int(draw.call()) % list.size()]
-		var deck: Variant = JSON.parse_string(FileAccess.get_file_as_string(dir_for(game).path_join(f)))
+		var text := FileAccess.get_file_as_string(f)
+		if text.is_empty() and not f.ends_with(".import"):
+			# En el pck exportado el json puede vivir como recurso remapeado.
+			text = FileAccess.get_file_as_string(f + ".import")
+		var deck: Variant = JSON.parse_string(text)
 		if deck is Dictionary and deck.get("main", []).size() >= 40 and deck.get("main", []).size() <= 80:
 			deck["_name"] = f
 			return deck
