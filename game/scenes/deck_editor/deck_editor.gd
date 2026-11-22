@@ -558,12 +558,13 @@ func _build_static() -> void:
 ## Pestañas de mazo: el juego combinado guarda un mazo por rival (cada motor solo
 ## ejecuta su pool). Se colocan sobre la zona del mazo, por encima del fondo.
 func _build_game_tabs() -> void:
-	var x := 356.0
+	# Borde superior de la zona del mazo; la bolsa desplegada cubre desde x=584.
+	var x := 262.0
 	for g in Game.GAMES:
 		var b := Button.new()
 		b.text = ("MAZO %s" if Assets.lang == "s" else "%s DECK") % g.to_upper()
 		b.position = Vector2(x, 2.0)
-		b.size = Vector2(104, 19)
+		b.size = Vector2(100, 19)
 		b.focus_mode = Control.FOCUS_NONE
 		b.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 		b.add_theme_font_size_override("font_size", 10)
@@ -588,7 +589,16 @@ func _build_game_tabs() -> void:
 			var target: String = g
 			b.pressed.connect(func() -> void: _switch_deck(target))
 		add_child(b)
-		x += 110.0
+		x += 104.0
+
+
+## Atajo de teclado (pc_deck): recorre los mazos instalados sin tocar las pestañas.
+func _cycle_deck() -> void:
+	for n in range(1, Game.GAMES.size() + 1):
+		var g: String = Game.GAMES[(Game.GAMES.find(game) + n) % Game.GAMES.size()]
+		if Paths.has_game(g):
+			_switch_deck(g)
+			return
 
 
 ## Cambiar de mazo exige la misma validacion que salir: uno invalido no se puede
@@ -1972,6 +1982,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		_set_filter(FILTERS[wrapi(FILTERS.find(_filter) + 1, 0, FILTERS.size())])
 	elif event.is_action_pressed("pc_sort"):
 		_open_sort()
+	elif event.is_action_pressed("pc_deck"):
+		_cycle_deck()
 	elif event.is_action_pressed("pc_window"):
 		if _nav_region == 4:
 			_set_focus("deck")
