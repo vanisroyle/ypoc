@@ -52,9 +52,10 @@ func _process(_delta: float) -> void:
 
 
 func _input(event: InputEvent) -> void:
+	# No marcar como consumido: Game._input y PlatformInput deben seguir viendo
+	# teclado/mando para que el puntero se mueva dentro del panel de opciones.
 	if _options != null:
 		_options.handle_input(event)
-		get_viewport().set_input_as_handled()
 
 
 func _unhandled_input(event: InputEvent) -> void:
