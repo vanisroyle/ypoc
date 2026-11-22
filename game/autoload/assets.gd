@@ -141,14 +141,21 @@ func texture(rel_path: String) -> Texture2D:
 			push_warning("Recurso no encontrado: %s" % rel_path)
 		return null
 	if not _textures.has(path):
-		var image := Image.load_from_file(path)
-		if image == null:
+		var tex: Texture2D
+		if path.begins_with("res://"):
+			# Datos empaquetados (web): el archivo se exporto como recurso importado (.ctex).
+			tex = load(path)
+		else:
+			var image := Image.load_from_file(path)
+			if image != null:
+				# Equivale a la opcion de importacion fix_alpha_border: evita que el color
+				# clave que queda bajo los pixeles transparentes "sangre" al escalar.
+				image.fix_alpha_edges()
+				tex = ImageTexture.create_from_image(image)
+		if tex == null:
 			push_error("No se pudo cargar %s" % path)
 			return null
-		# Equivale a la opcion de importacion fix_alpha_border: evita que el color clave que
-		# queda bajo los pixeles transparentes "sangre" al escalar con filtrado.
-		image.fix_alpha_edges()
-		_textures[path] = ImageTexture.create_from_image(image)
+		_textures[path] = tex
 	return _textures[path]
 
 
@@ -182,5 +189,11 @@ func _scan(abs_dir: String, rel_dir: String) -> void:
 		if dir.current_is_dir():
 			_scan(abs_path, rel)
 		else:
+			# En el pck exportado los recursos importados figuran como "*.import";
+			# el indice usa el nombre original, que load() resuelve por el remap.
+			if name.ends_with(".import"):
+				name = name.trim_suffix(".import")
+				abs_path = abs_path.trim_suffix(".import")
+				rel = rel.trim_suffix(".import")
 			_index[rel.to_lower()] = abs_path
 		name = dir.get_next()
