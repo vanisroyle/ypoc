@@ -113,6 +113,11 @@ func serve(ws *websocket.Conn) {
 // control procesa HOST/JOIN; devuelve false si la conexion debe morir.
 func control(c *conn, text string) bool {
 	head := strings.SplitN(text, " ", 2)[0]
+	if c.room != nil {
+		// Una conexion ya registrada no puede abrir mas salas ni unirse a otras.
+		c.send(websocket.MessageText, []byte("ERR already registered"))
+		return false
+	}
 	switch head {
 	case "HOST":
 		r := &room{code: newCode(), host: c}
@@ -131,13 +136,24 @@ func control(c *conn, text string) bool {
 		roomsMu.Lock()
 		r, ok := rooms[code]
 		full := ok && r.guest != nil
+		dead := false
 		if ok && !full {
-			r.guest = c
-			c.peer, r.host.peer = r.host, c
+			// El anfitrion pudo morir justo antes de este JOIN: comprobar su
+			// estado bajo su propio mutex para no enlazar a un cadaver.
+			r.host.mu.Lock()
+			dead = !r.host.alive
+			if !dead {
+				r.guest = c
+				r.host.peer = c
+			}
+			r.host.mu.Unlock()
+			if !dead {
+				c.peer = r.host
+			}
 		}
 		roomsMu.Unlock()
 		switch {
-		case !ok:
+		case !ok || dead:
 			c.send(websocket.MessageText, []byte("ERR no such room"))
 			return false
 		case full:
