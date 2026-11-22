@@ -45,6 +45,8 @@ func _dial(url: String, hello: String) -> int:
 	_rx.clear()
 	room_code = ""
 	error_reason = ""
+	_browse_url = ""
+	_browse_key = ""
 	return OK
 
 
@@ -80,15 +82,31 @@ func browse(url: String, key := "") -> int:
 	var query := "op=list"
 	if key != "":
 		query += "&key=" + key.uri_encode()
-	return _dial(url + _sep(url) + "?" + query, "LIST")
+	var err := _dial(url + _sep(url) + "?" + query, "LIST")
+	if err == OK:
+		_browse_url = url
+		_browse_key = key
+	return err
 
 
-## Tras browse(): entrar a una sala publica o privada por codigo.
+var _browse_url := ""
+var _browse_key := ""
+
+
+## Tras browse(): entrar a una sala publica o privada por codigo. Re-dial a
+## op=join&code=: en el Worker el socket de lista vive en otro objeto y no
+## puede enlazar, y en los demas reles una conexion JOIN limpia vale igual.
 func join_room(code: String) -> int:
-	if _ws == null or _ws.get_ready_state() != WebSocketPeer.STATE_OPEN:
+	if _browse_url == "":
 		return ERR_UNAVAILABLE
-	_ws.send_text("JOIN " + code.strip_edges().to_upper())
-	return OK
+	var url := _browse_url
+	var key := _browse_key
+	_browse_url = ""
+	_browse_key = ""
+	if _ws != null:
+		_ws.close()
+		_ws = null
+	return create_client(url, code, key)
 
 
 func poll() -> void:

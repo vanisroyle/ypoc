@@ -7,7 +7,9 @@ guest joins by code, and every binary WebSocket frame is forwarded verbatim
 to the other side — the game's LAN packets pass through untouched.
 
 Protocol (text control frames, before linking):
-    client -> "HOST"            server -> "ROOM ABCDEF"
+    client -> "HOST"            server -> "ROOM ABCDEF"   (private room)
+    client -> "HOST PUB"        server -> "ROOM ABCDEF"   (public, listed room)
+    client -> "LIST"            server -> "GAMES <codes>" (public, joinable rooms)
     client -> "JOIN ABCDEF"     server -> "GO" (sent to BOTH sides)
                                 server -> "ERR <reason>"  (bad code / room full)
 After "GO" binary frames are piped both ways until either side disconnects,
@@ -31,7 +33,7 @@ HELLO_TIMEOUT = 15.0
 MAX_FRAME = 1 << 20  # game packets are tiny; cap stray frames at 1 MiB
 MAX_ROOMS = 5000
 
-# code -> {"host": ws, "guest": ws | None}
+# code -> {"host": ws, "guest": ws | None, "public": bool}
 rooms: dict[str, dict] = {}
 
 
@@ -57,7 +59,7 @@ async def forward_host(room: dict, code: str, host) -> None:
             guest = room.get("guest")
             if guest is not None and isinstance(frame, bytes):
                 await guest.send(frame)
-    except websockets.ConnectionClosed:
+    except (websockets.ConnectionClosed, websockets.ConnectionClosedOK):
         pass
     finally:
         rooms.pop(code, None)
@@ -77,7 +79,7 @@ async def forward_guest(code: str, ws) -> None:
     room["guest"] = ws
     try:
         await asyncio.gather(host.send("GO"), ws.send("GO"))
-    except websockets.ConnectionClosed:
+    except (websockets.ConnectionClosed, websockets.ConnectionClosedOK):
         rooms.pop(code, None)
         await close(host)
         return
@@ -85,7 +87,7 @@ async def forward_guest(code: str, ws) -> None:
         async for frame in ws:
             if isinstance(frame, bytes):
                 await host.send(frame)
-    except websockets.ConnectionClosed:
+    except (websockets.ConnectionClosed, websockets.ConnectionClosedOK):
         pass
     finally:
         rooms.pop(code, None)
@@ -93,28 +95,40 @@ async def forward_guest(code: str, ws) -> None:
 
 
 async def handle(ws) -> None:
-    try:
-        hello = await asyncio.wait_for(ws.recv(), HELLO_TIMEOUT)
-    except (asyncio.TimeoutError, websockets.ConnectionClosed):
-        return
-    if not isinstance(hello, str):
-        await ws.send("ERR text hello expected")
-        return
-    hello = hello.strip()
-    if hello == "HOST":
-        if len(rooms) >= MAX_ROOMS:
-            await ws.send("ERR server full")
+    # LIST responde y sigue leyendo; HOST/JOIN ceden el socket al pipe.
+    while True:
+        try:
+            hello = await asyncio.wait_for(ws.recv(), HELLO_TIMEOUT)
+        except (asyncio.TimeoutError, websockets.ConnectionClosed,
+                websockets.ConnectionClosedOK):
             return
-        code = new_code()
-        rooms[code] = {"host": ws, "guest": None}
-        print(f"[relay] room {code} opened", flush=True)
-        await forward_host(rooms[code], code, ws)
-        print(f"[relay] room {code} closed", flush=True)
-    elif hello.upper().startswith("JOIN "):
-        code = hello[5:].strip().upper()
-        await forward_guest(code, ws)
-    else:
-        await ws.send("ERR expected HOST or JOIN <code>")
+        if not isinstance(hello, str):
+            await ws.send("ERR text hello expected")
+            return
+        hello = hello.strip()
+        if hello.upper().startswith("HOST"):
+            if len(rooms) >= MAX_ROOMS:
+                await ws.send("ERR server full")
+                return
+            public = hello.upper().endswith("PUB")
+            code = new_code()
+            rooms[code] = {"host": ws, "guest": None, "public": public}
+            print(f"[relay] room {code} opened (public={public})", flush=True)
+            await forward_host(rooms[code], code, ws)
+            print(f"[relay] room {code} closed", flush=True)
+            return
+        elif hello.upper().startswith("JOIN "):
+            code = hello[5:].strip().upper()
+            await forward_guest(code, ws)
+            return
+        elif hello == "LIST":
+            codes = [
+                c for c, r in rooms.items() if r["public"] and r["guest"] is None
+            ]
+            await ws.send("GAMES" + (" " + " ".join(codes) if codes else ""))
+        else:
+            await ws.send("ERR expected HOST, LIST or JOIN <code>")
+            return
 
 
 def main() -> int:

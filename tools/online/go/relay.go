@@ -80,6 +80,7 @@ var (
 	maxPerIP = flag.Int("maxip", 16, "conexiones simultaneas por IP (las dos instancias de una prueba local cuentan)")
 	roomTTL  = flag.Duration("roomttl", 10*time.Minute, "vida de una sala sin enlazar")
 	secret   = flag.String("key", "", "clave compartida; si se pone, los clientes deben mandar ?key=")
+	trustFwd = flag.Bool("trustproxy", false, "confiar en Fly-Client-IP/X-Forwarded-For (solo detras de un proxy que los reescriba)")
 )
 
 func main() {
@@ -93,14 +94,18 @@ func main() {
 	log.Fatal(http.ListenAndServe(*addr, mux))
 }
 
-// clientIP toma la IP real que deja el proxy del hosting (Fly-Client-IP en
-// Fly.io, X-Forwarded-For en general); sin proxy usa la direccion remota.
+// clientIP usa la direccion remota salvo que -trustproxy lo permita: solo un
+// proxy que reescribe las cabeceras (Fly.io fija Fly-Client-IP) debe habilitar
+// esto; en un despliegue directo un cliente podria rotar las cabeceras y
+// saltarse -maxip.
 func clientIP(r *http.Request) string {
-	if ip := r.Header.Get("Fly-Client-IP"); ip != "" {
-		return ip
-	}
-	if fwd := r.Header.Get("X-Forwarded-For"); fwd != "" {
-		return strings.TrimSpace(strings.SplitN(fwd, ",", 2)[0])
+	if *trustFwd {
+		if ip := r.Header.Get("Fly-Client-IP"); ip != "" {
+			return ip
+		}
+		if fwd := r.Header.Get("X-Forwarded-For"); fwd != "" {
+			return strings.TrimSpace(strings.SplitN(fwd, ",", 2)[0])
+		}
 	}
 	host, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
