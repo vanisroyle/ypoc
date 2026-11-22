@@ -1,245 +1,136 @@
 <p align="center">
-  <img src="game/assets/icons/launcher.svg" width="112" height="112" alt="PoC Remake icon">
+  <img src="game/assets/icons/launcher.svg" width="112" height="112" alt="Power of Chaos icon">
 </p>
 
-# Yu-Gi-Oh! Power of Chaos Remake
+# Yu-Gi-Oh! Power of Chaos — Remake
 
-**English**
+A Godot reimplementation of **Yugi the Destiny, Kaiba the Revenge and Joey the Passion** combined into **one game**: a single menu, one card collection (1,113 obtainable cards) and a campaign that runs through all three rivals in order.
 
-[![Download EXE for Windows](https://img.shields.io/badge/Download_EXE-Windows-2ea44f?style=for-the-badge)](https://github.com/Johanfer12/Yu-Gi-Oh-Power-of-Chaos-Remake/releases/download/v0.1.0-alpha.42/PowerOfChaos.exe)
-
-**Direct download · Windows · v0.1.0-alpha.42 preview · No ZIP required**
-
-**Bring your Power of Chaos games together in one modern Windows launcher.**
-
-**New in alpha.42.** Restore original progress and import decks, replays, and voice packs directly from the Windows launcher. Preview release notes before updating. [Release notes](RELEASE_NOTES.md)
+**Play it on the web:** https://power-of-chaos.pages.dev — works as an installable PWA on iOS 16+ (Safari → Share → Add to Home Screen) and in any modern desktop browser.
 
 ## Contents
 
-- [Why use it?](#why-use-it)
-- [Launcher settings](#launcher-settings)
-- [Your ISO → PC](#your-iso--pc)
-- [Launcher screenshots](#launcher-screenshots)
-- [What is this remake?](#what-is-this-remake)
-- [Get started on Windows](#get-started-on-windows)
-- [How it works](#how-it-works)
-- [Compatibility and current limits](#compatibility-and-current-limits)
-- [Languages and voice packs](#languages-and-voice-packs)
-- [Run from source](#run-from-source)
-- [Automatic Windows builds](#automatic-windows-builds)
+- [What the game is](#what-the-game-is)
+- [Platforms](#platforms)
+- [Game data](#game-data)
+- [Playing](#playing)
+- [Multiplayer](#multiplayer)
+- [Building](#building)
 - [Project status and notices](#project-status-and-notices)
 
-## Why use it?
+## What the game is
 
-- **PC launcher with local conversion.** Select your disc images or installed folders and the launcher prepares your games for Windows locally.
-- **Joey network duels without DirectPlay.** Modern LAN networking replaces the legacy Windows component. Connections have been tested between PC and PC.
-- **Portable.** Keep the EXE and its **`PoC Data`** folder together: your resources, saves and settings travel with them.
-- **Lighter game resources.** Lossless WebP images and OGG audio reduce storage; the tested Yugi library takes about **44% less space** than its uncompressed converted version. Savings vary by game and edition.
-- **16:9 decorative side panels.** Widescreen decorations surround the original 4:3 duel area in the supported Yugi, Kaiba and Joey views, each with its own background.
-- **All three games in one place.** Yugi the Destiny, Kaiba the Revenge and Joey the Passion share one launcher. Import just one to start and add the others whenever you want.
-- **Shared collection, separate decks.** Keep your cards across games with the original compatibility: Yugi uses its own catalog, Kaiba also uses Yugi cards, and Joey uses all three. Each title keeps its active deck.
-- **Choose your pace and display.** Select 30 FPS, 60 FPS or your display refresh rate, choose stretched, original 4:3 or decorative backgrounds, and play at normal or 2× speed.
-- **Optional quick play in all three games.** Skip character scenes, voices and scene wipes while keeping music and sound effects. [See launcher settings](#launcher-settings).
+The original trilogy shipped as three separate Windows programs, each with its own
+card pool, its own save and its own menus. This remake reimplements the three duel
+engines in Godot and unifies the shell around them:
 
-## Launcher settings
+- **One menu** (styled after Joey's): Duel · Deck Construction · Card List · Options · Exit.
+- **One campaign**: beat Yugi to unlock Kaiba, beat Kaiba to unlock Joey. Defeated
+  rivals stay open for rematches, and Joey keeps his seven AI levels.
+- **One collection**: all 1,113 cards obtainable across the three games feed a
+  single shared collection and the deck-building trunk.
+- **Three decks**: each rival is dueled with the deck of *their* game — every
+  engine only runs the card pool it actually supports. Deck Construction opens
+  the real editor directly (trunk, drag & drop, filters, sort, import/export)
+  with YUGI/KAIBA/JOEY tabs to switch decks.
 
-Open the **gear** in the launcher to choose how you play:
+"Remake" means the engine is rebuilt; card art, voices and music come from your
+own copy of the games.
 
-| Setting | Options |
-|---|---|
-| Aspect | **Stretched** fills the window; **Original, no background** keeps 4:3 with black bars; **Overlay** adds each game's decorative duel background around the original 4:3 area. |
-| FPS | **30**, **60**, or **Display**, which follows the current monitor's refresh rate. |
-| Simulation | **Normal** or **2×**. Simulation speed is independent of the FPS limit. |
-| Quick play | Skip character introductions, outros, portrait reactions, spoken lines and scene wipes in **Yugi, Kaiba and Joey**. Music and sound effects remain enabled. |
-| Improved card translations | **Original** or **Improved (ES)**: Spanish names and descriptions for all **771 cards**, using public community sources and adaptations that preserve the original effects. |
+## Platforms
 
-**Default settings:** display refresh rate, normal simulation speed and quick play off.
-
-Preferences are remembered between launches. Quick play is optional and starts **off**;
-turn it off to restore the original presentation. The launcher opens maximized from
-the start, and you can still resize the window or use **F11 / Alt+Enter** for fullscreen.
-
-**Improved card translations** is optional and starts **off**. It covers Spanish names and descriptions for all **771 cards** across the three games, using public community databases with reviewed adaptations for the original English effects. Menus and game rules stay as they are; this is a community improvement, not an official translation pack.
-
-Enable it with an internet connection to prepare the local pack. The first download is approximately **110 MB**; afterward the texts work offline. Opening the launcher does not start downloads. If preparation fails, imported texts remain available. Turn the option off at any time to restore them.
-
-## Your ISO → PC
-
-Select your ISO images or installed game folders, then click **Build**, which appears after selecting a source, to prepare the games for Windows.
-
-Your ISO images and converted resources stay on your computer; no original game data is included in the download. Joey's networking has been tested between **PC and PC**. This is still an alpha: feedback, bug reports and testing on other editions and devices are welcome.
-
-## Launcher screenshots
-
-**Your library, with all three games prepared (English interface)**
-
-![English launcher with Yugi, Kaiba and Joey ready to play](docs/images/launcher-library-en.png)
-
-**Import your resources and build for PC**
-
-![English import screen with ISO and folder selection](docs/images/launcher-import-en.png)
-
-The screenshots show the Windows launcher. Game logos appear after importing your own compatible copies.
-
-## What is this remake?
-
-Yu-Gi-Oh! Power of Chaos Remake is an experimental Godot reimplementation of the engine behind **Yugi the Destiny, Kaiba the Revenge, and Joey the Passion**. It aims to preserve the original games' rules, presentation and feel while making them easier to launch and maintain on modern PCs.
-
-You provide a compatible copy of the game you want to play. The launcher reads its resources locally and prepares them for the new engine. **One game is enough to get started.** You can add the other two later.
-
-> **Early preview:** development and compatibility testing are ongoing. This is not a finished, fully faithful replacement for every original release.
-
-### More launcher features
-
-- **One launcher for three games.** Open an imported game by clicking its logo, or add another from the same menu.
-- **One Windows executable.** The packaged launcher includes Godot, the local converter and 7-Zip. Players do not need to install those tools separately.
-- **Start with the game you own.** Import Yugi, Kaiba or Joey independently; the other two are optional.
-- **Use an ISO or an installed game folder.** Supported disc images are read as archives without running their installers or original game executables.
-- **A portable game folder.** Resources, saves, preferences, conversion tools and temporary extraction files stay in **`PoC Data` beside the EXE**. Move the EXE and that folder together.
-- **Smaller resource storage.** Images use pixel-exact lossless WebP when smaller; music and longer voices use OGG Vorbis. Very short effects remain WAV.
-- **Keep your files local.** Your disc images, extracted resources and saved games are not uploaded to GitHub or a conversion service.
-- **Add games without starting over.** Later imports preserve previously prepared games and existing remake saves.
-- **Choose your language.** The launcher offers English, Spanish, German, French, Italian and Japanese, selects a supported system language on first use and remembers your preference.
-- **A launcher made for this project.** Original launcher music, gold-accented controls, a custom application icon, volume settings and quick access to your games.
-- **A maintainable engine.** Gameplay runs in Godot rather than by patching or launching the original Windows executables. Original resources are supplied separately by each player.
-
-"Remake" refers to the engine reconstruction. It does not mean the original card illustrations, voices or music have been redrawn or re-recorded.
-
-## Get started on Windows
-
-1. [Download **`PowerOfChaos.exe`** directly](https://github.com/Johanfer12/Yu-Gi-Oh-Power-of-Chaos-Remake/releases/download/v0.1.0-alpha.42/PowerOfChaos.exe). Development builds are also available in [Actions](https://github.com/Johanfer12/Yu-Gi-Oh-Power-of-Chaos-Remake/actions/workflows/build-windows.yml).
-2. Put the EXE in a folder where you want to keep the launcher and its saves, then open it.
-3. In **ADD YOUR RESOURCES**, move over the game you want to add and choose **ISO** or **Folder**.
-4. Select a compatible disc image or installed game folder, then click **Build** and wait for conversion to finish.
-5. Click the prepared game's logo to play. The remaining games can be added later from the same screen.
-
-The download is a single EXE; no installation wizard is required. The first import extracts and verifies the bundled conversion tools in `PoC Data/tools/`. Opening the menu does not wait for that extraction.
-
-GitHub may package Actions artifacts in a ZIP. Release downloads expose the EXE directly.
-
-### What you need
-
-- A Windows PC capable of running Godot's OpenGL compatibility renderer.
-- A compatible copy of at least one original game.
-- Enough free disk space for the converted resources and temporary extraction files.
-
-An installed game folder must contain `Data.dat`, `Voice.dat`, `Region.dat` and the corresponding original executable. Some third-party installers unpack `Data.dat` into a `data` folder of loose files; that layout is accepted too. The executable is read to obtain supported engine tables; it is not launched.
-
-Yugi the Destiny supports the European/Spanish and US editions. For the original US release (165 cards), select the Yugi disc or ISO. When prompted for the December 2003 update, select the US Kaiba the Revenge disc or ISO. The importer prepares Yugi automatically from both discs. If Yugi is already updated, select its installation folder. Kaiba the Revenge and Joey the Passion support their English editions.
-
-## How it works
-
-```text
-Your ISO or installed game folder
-                |
-       Local validation and extraction
-                |
-       Converted resources on your PC
-                |
-          Godot game engine
-```
-
-The distributed EXE contains the launcher, engine code and conversion tools. Original game binaries, card artwork, voices and in-game music are not distributed with it. They are read from the copy you select and converted locally.
-
-Conversion works in a temporary directory inside `PoC Data`. It validates and compresses the new library before switching it into `PoC Data/resources/`. When adding a game, it uses the existing library as its base and retires the superseded generated copy after a successful switch. Original disc images, installed game folders and saves are not overwritten.
-
-The importer validates supported executable profiles and rejects unsupported revisions. It also rejects damaged or truncated disc images. It does not download missing game resources.
-
-### Where files are stored
-
-| Files | Location relative to the EXE |
-| --- | --- |
-| Converted WebP/OGG resources and engine data | `PoC Data/resources/` |
-| Remake saves | `PoC Data/saves/` |
-| Launcher settings | `PoC Data/content.cfg` |
-| Bundled conversion tools and licenses | `PoC Data/tools/` |
-| Temporary extraction files | `PoC Data/temp/` and transient staging directories inside `PoC Data/` |
-| Last import error report | `PoC Data/import-last-error.log` |
-
-Import failures show the affected game, source file or folder, stage and cause. Use **Copy details** or **Open log** in the error dialog, and **View error** to reopen it. General conversion, compression or write failures identify their stage without blaming an ISO without evidence.
-
-Keep **`PowerOfChaos.exe` and `PoC Data` together** when moving or backing up the game. The launcher uses relative resource paths, so moving the pair to another folder or drive does not require importing again. Choose a writable folder; if it is read-only, the launcher asks you to move it instead of silently storing games elsewhere.
-
-When upgrading in the same folder, the launcher copies existing adjacent `saves/` into `PoC Data/saves/` without replacing newer portable saves. It also migrates the older application preferences and prepares a compact local copy of the previous imported library. Migration keeps the old source intact until the new library is verified. If upgrading to a different folder, copy your previous `saves/` beside the new EXE before its first run, or move an existing `PoC Data` folder with it.
-
-## Compatibility and current limits
-
-The launcher checks GitHub releases on startup. The circular **update** button next to the power button appears only when a newer version is detected. The footer shows your version, update status, GitHub and license links. You can download an update and restart from the launcher: SHA-256 is verified before replacing only the EXE, preserving `PoC Data`. Downloads can be canceled. If replacement or process launch fails, the helper attempts to restore the previous EXE; diagnostics are saved in `PoC Data/updates/last-update.log`. Alpha/beta builds also follow previews; stable builds stay on stable releases. Windows, an internet connection and a writable EXE folder are required.
-
-This preview targets **Windows PC**. Other platforms are not part of this release workflow.
-
-The current development checks cover:
-
-| Game | Import sources checked | Engine checks |
+| Platform | How | Notes |
 | --- | --- | --- |
-| Yugi the Destiny | Compatible ISO and installed folder | Independent title and normal-duel startup |
-| Kaiba the Revenge | Compatible ISO and installed folder | Independent title and normal-duel startup; supported executable profiles normalized without requiring Yugi |
-| Joey the Passion | Compatible ISO and installed folder | Independent title and normal-duel startup |
+| **Windows** | `PowerOfChaos.exe` + `PoC Data/` folder | Keep the two together — saves and resources are portable. |
+| **Web / PWA** | https://power-of-chaos.pages.dev | Static Cloudflare Pages deploy; card packs download once (~320 MB) and are cached offline by the service worker. |
+| **TrimUI Brick / ARM64 handhelds** | `tools/build_handheld.sh` | muOS / Knulli / ROCKNIX package with gamepad-driven cursor. |
+| **Nintendo Switch** | `switch` branch | `.nro` homebrew + installable NSP forwarder, built with the godot-switch-nro port. |
 
-Compatible ISO images of all three games have been imported; truncated images are rejected with details identifying the affected game. Support for other revisions and regions is still expanding.
+The engine runs the OpenGL compatibility renderer; the Switch build ships both
+GL and Vulkan backends.
 
-Gameplay, AI, presentation and timing are under active comparison with the originals. Passing these checks does not certify every duel or every card interaction. Please report the game, edition, import source and steps needed to reproduce a problem; do not attach original game files to issues.
+## Game data
 
-Supported original MSI/CAB discs are extracted with bundled 7-Zip. Inno Setup media require `innoextract` on `PATH`; other unsupported installers should be installed separately before selecting their installed folder.
+No original game data is in this repository or in any distributed build — you
+supply your own copy. The launcher/import flow converts the original `Data.dat`,
+`Voice.dat` and `Region.dat` into WebP images, OGG audio and engine tables under
+**`PoC Data/resources/`**. One imported game is enough to play; import all three
+for the full collection.
 
-## Languages and voice packs
+| Files | Location |
+| --- | --- |
+| Converted resources and engine data | `PoC Data/resources/` |
+| Saves, decks, collection, settings | `PoC Data/saves/`, `PoC Data/system.json` |
+| Bundled conversion tools | `PoC Data/tools/` |
 
-The language selector controls the launcher and the game's available text resources. Availability depends on the imported edition. `Data.dat` can differ between regions and revisions; the importer does not assume every release has identical data.
+## Playing
 
-Voice packs are detected from the supplied `Voice.dat`. Switching language uses the matching installed dub when available, otherwise the primary imported dub remains in use. Selecting a language does not download its voices.
+- **Duel** — pick an unlocked rival; toggle **Match mode** for best-of-3 sets
+  with a side deck, open **LAN / Online Duel**, or watch saved **Replays**.
+- **Deck Construction** — full editor (trunk, type filters, sorting, side/fusion
+  zones, .ydc import/export). Tabs switch between the three game decks;
+  **D** cycles decks on keyboard.
+- **Card List** — the whole obtainable collection with per-card details.
+- **Options** — volume, card set, forbidden cards, screen mode.
+- Keyboard, mouse and gamepad are supported (gamepad drives the hand cursor;
+  A = click). Shortcuts inside the editor: **Tab** bag/deck, **S** side deck,
+  **F** filter, **O** sort, **W** expand collection, **D** switch deck.
 
-Open **Import more resources**, choose the game and select its `Voice.dat` with **Import voices**. If you have selected an ISO or folder, click **Build** to import them together. For an already prepared game, voice import starts when you select the file. The source tools can do the same:
+## Multiplayer
 
-```powershell
-python -m pocx.import_games --base "existing-data" --voice "joey=C:\My Joey Copy\Voice.dat" --out "new-data"
+Two ways to duel another player:
+
+- **LAN** — direct connection on the local network (replaces the original
+  DirectPlay dependency), plus an ONLINE mode for internet play.
+- **Online relay** — a tiny room-code WebSocket relay in `tools/online/`: the
+  host creates a **public** room (guests see it in a list) or a **private** room
+  (join by 6-char code). The relay only pipes opaque game frames.
+  - `tools/online/relay_server.py` — Python reference server.
+  - `tools/online/go/` — hardened Go server (connection caps, per-IP limits,
+    room TTL, optional shared key).
+  - `tools/online/worker/` — Cloudflare Worker + Durable Objects version
+    (serverless, free tier).
+
+Point the game at your relay in `PoC Data/system.json`:
+
+```json
+{ "online": { "relay": "ws://your-server:8765" } }
 ```
 
-Use a new output directory for manual imports. The launcher manages its own atomic in-place updates. Two different voice packs for the same game and language are rejected as a conflict rather than silently replacing one another.
+See `tools/online/README.md` for deployment details.
 
-The same menu imports `.ydc` decks into the shared library and `.ydr` replays into the selected or detected game. It also restores the original `Common/system.dat` or the remake’s `system.json`, including the unlocked collection and progress. Replacing a file requires confirmation, and the launcher backs up the active save before replacing it.
+## Building
 
-## Run from source
-
-Development requires **Godot 4.7.2** and **Python 3.12 or newer**. The Windows build workflow uses Python 3.13.
+Requirements: **Godot 4.7.2** and **Python 3.12+**.
 
 ```powershell
-git clone https://github.com/Johanfer12/Yu-Gi-Oh-Power-of-Chaos-Remake.git
-cd Yu-Gi-Oh-Power-of-Chaos-Remake
+git clone https://github.com/vanisroyle/ypoc.git
+cd ypoc
 python -m pip install ./tools
 godot --editor --path game
 ```
 
-Run `game/project.godot` from the editor. Start with an ISO or installed folder, just as in the packaged launcher. If Python is in a virtual environment, launch Godot from a shell with that environment activated.
+| Target | Script |
+| --- | --- |
+| Windows exe | `tools/build_windows.py` |
+| Web/PWA export (`dist/web/`) | `tools/build_web.sh` |
+| ARM64 handheld package | `tools/build_handheld.sh` |
 
-Source-based imports need 7-Zip available through `PATH` or its usual Windows installation location. The distributed EXE already includes it and the audio encoder; FFmpeg is not needed for normal imports.
-
-Synthetic importer checks do not require original game resources:
-
-```powershell
-$env:PYTHONPATH = "tools"
-python -m unittest discover -s tools/tests -p "test_*import.py" -v
-```
-
-## Automatic Windows builds
-
-Each release includes [English change notes](RELEASE_NOTES.md) describing its improvements and fixes.
-
-[Launcher Windows](https://github.com/Johanfer12/Yu-Gi-Oh-Power-of-Chaos-Remake/actions/workflows/build-windows.yml) builds from the public sources:
-
-- Pushes to `main` and pull requests generate a Windows build.
-- The workflow can also be started manually.
-- Tags beginning with `v` generate a GitHub prerelease containing the EXE, its SHA-256 checksum and a build manifest.
-
-Each build checks the source file policy, runs synthetic importer tests, creates a clean export project, bundles the local converter and verifies the embedded tools. Game resources are not required by the build and are not included in it.
-
-Installed copies can check and download new releases with the update button; replacement and restart require confirming the update.
+The web build splits card data into ~20 MB packs (`packs/*.pck`) downloaded at
+boot with an in-game progress screen, and splits `index.wasm` into parts
+streamed back together by a fetch shim — every file stays under Cloudflare
+Pages' 25 MiB limit, so a deploy is plain static hosting (`dist/cf-deploy`
+contains a ready `wrangler.toml`, `deploy.bat` and `_headers` with the required
+COOP/COEP isolation).
 
 ## Project status and notices
 
-PoC Remake is an independent, unofficial project. It is not affiliated with or endorsed by the original games' publishers or rights holders. Game names identify compatible titles; their assets and trademarks remain with their respective owners.
+This is an independent, unofficial project — not affiliated with or endorsed by
+Konami or the rights holders of the original games. Original assets and
+trademarks remain with their owners; they are read only from copies each player
+provides.
 
-The launcher theme, the three external duel backgrounds and the custom application icon belong to this project. The pending-game frames include vector outlines derived from the original logos; the original logo images are loaded only after importing a user's copy.
-
-The source includes work derived through reverse engineering. Its provenance and project-wide licensing remain under review; no blanket license for the repository has been assigned. Publishing the sources does not license the original games or grant rights to redistribute their assets.
-
-Third-party components retain their own licenses. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) and **Licenses** in the packaged launcher for the bundled engine and tool notices, including the matching 7-Zip source archive.
+The source includes work derived through reverse engineering for
+interoperability. Third-party components retain their own licenses — see
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Release history lives in
+[RELEASE_NOTES.md](RELEASE_NOTES.md).
