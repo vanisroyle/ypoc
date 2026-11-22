@@ -164,6 +164,12 @@ func _next_pack() -> void:
 func _on_pack(result: int, code: int, _h: PackedStringArray, body: PackedByteArray,
 		req: HTTPRequest) -> void:
 	if result != HTTPRequest.RESULT_SUCCESS or code != 200:
+		# Fallo terminal: cancela el resto de descargas en curso.
+		_queue.clear()
+		for other: HTTPRequest in _inflight:
+			other.cancel_request()
+			other.queue_free()
+		_inflight.clear()
 		_fail("Download interrupted.")
 		return
 	DirAccess.make_dir_recursive_absolute(PACK_DIR)
