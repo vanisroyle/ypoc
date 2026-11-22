@@ -68,10 +68,14 @@ Flags (abuse protection, all optional):
 -maxip 16       connections per client IP (local host+guest testing is fine)
 -roomttl 10m    public/private rooms that nobody joins expire
 -key SECRET     if set, clients must send ?key=SECRET (online.key in system.json)
+-trustproxy     trust Fly-Client-IP/X-Forwarded-For for the per-IP limit;
+                the bundled Dockerfile sets it for Fly, which rewrites the
+                header at the edge — leave it OFF on a directly exposed host,
+                or clients can fake IPs to bypass -maxip
 ```
 
-Client IP honors `Fly-Client-IP` / `X-Forwarded-For` when deployed behind
-Fly/Cloudflare-style proxies.
+The bundled `go/Dockerfile` passes `-trustproxy` (Fly rewrites the header at
+its edge); remove it when running the relay directly on the internet.
 
 ## Free hosting option C — run `relay_server.py` anywhere
 

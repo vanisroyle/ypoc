@@ -9,4 +9,5 @@ FROM gcr.io/distroless/static-debian12
 COPY --from=build /relay /relay
 EXPOSE 8765
 USER nonroot
-ENTRYPOINT ["/relay", "-addr", ":8765"]
+# -trustproxy: Fly reescribe Fly-Client-IP en el borde; fuera de Fly quitarla.
+ENTRYPOINT ["/relay", "-addr", ":8765", "-trustproxy"]
