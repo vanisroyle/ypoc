@@ -453,8 +453,9 @@ func f5af600(p: int, index: int) -> int:
 		if result >= 0:
 			return result
 	# Politica aprendida por self-play (PoC Data/ai_policy.json): en el fallback generico
-	# puntua cada candidato por stat + peso entrenado en lugar de solo stat.
-	if ai_policy != null:
+	# puntua cada candidato por stat + peso entrenado en lugar de solo stat. Sin pesos,
+	# el comportamiento es identico al original.
+	if ai_policy != null and not ai_policy.weights.is_empty():
 		var trained := -INF
 		var picked := -1
 		for i in range(count):
