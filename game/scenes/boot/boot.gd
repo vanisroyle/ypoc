@@ -5,12 +5,14 @@ extends Node2D
 
 const PACK_DIR := "user://packs"
 const PACK_CACHE := "user://packs.json"
+## Descargas simultaneas: 17 packs de ~20 MB en serie saturan poco el ancho.
+const PARALLEL_DOWNLOADS := 4
 
 var _manifest := {}
 var _queue: Array = []
 var _done := 0
 var _total := 0
-var _req: HTTPRequest
+var _inflight: Dictionary = {} # HTTPRequest -> nombre del pack
 var _manifest_text := ""
 var _status: Label
 var _bar: ProgressBar
@@ -103,9 +105,6 @@ func _on_manifest(result: int, code: int, _h: PackedStringArray, body: PackedByt
 		_mount_all()
 	else:
 		_status.text = "Downloading cards..."
-		_req = HTTPRequest.new()
-		add_child(_req)
-		_req.request_completed.connect(_on_pack)
 		_next_pack()
 
 
@@ -146,23 +145,31 @@ func _files_ok(manifest: Dictionary) -> bool:
 
 
 func _next_pack() -> void:
-	if _queue.is_empty():
+	while _inflight.size() < PARALLEL_DOWNLOADS and not _queue.is_empty():
+		var name: String = _queue.pop_front()
+		var req := HTTPRequest.new()
+		add_child(req)
+		_inflight[req] = name
+		req.request_completed.connect(_on_pack.bind(req))
+		req.request(_base + "packs/" + name)
+	if _queue.is_empty() and _inflight.is_empty():
 		# El manifest se guarda solo al completar la descarga entera.
 		DirAccess.make_dir_recursive_absolute(PACK_DIR)
 		var f := FileAccess.open(PACK_CACHE, FileAccess.WRITE)
 		f.store_string(_manifest_text)
 		f.close()
 		_mount_all()
-		return
-	_req.request(_base + "packs/" + _queue[0])
 
 
-func _on_pack(result: int, code: int, _h: PackedStringArray, body: PackedByteArray) -> void:
+func _on_pack(result: int, code: int, _h: PackedStringArray, body: PackedByteArray,
+		req: HTTPRequest) -> void:
 	if result != HTTPRequest.RESULT_SUCCESS or code != 200:
 		_fail("Download interrupted.")
 		return
 	DirAccess.make_dir_recursive_absolute(PACK_DIR)
-	var name: String = _queue.pop_front()
+	var name: String = _inflight[req]
+	_inflight.erase(req)
+	req.queue_free()
 	var f := FileAccess.open(PACK_DIR.path_join(name), FileAccess.WRITE)
 	f.store_buffer(body)
 	f.close()
@@ -187,16 +194,20 @@ func _mount_all() -> void:
 
 
 func _process(_delta: float) -> void:
-	if _req == null:
+	if _inflight.is_empty():
 		return
-	var current := _req.get_downloaded_bytes()
-	var target := _req.get_body_size()
+	var current := 0
+	var unknown := false
+	for req: HTTPRequest in _inflight:
+		current += req.get_downloaded_bytes()
+		if req.get_body_size() <= 0:
+			unknown = true
 	var pct := (_done + current) * 100.0 / maxf(_total, 1)
 	_bar.value = pct
 	var mb := (_done + current) / 1048576.0
 	_status.text = "Downloading cards... %d MB / %d MB" % [mb, _total / 1048576.0]
-	if target <= 0:
-		_bar.value = _done * 100.0 / maxf(_total, 1)
+	if unknown:
+		_bar.value = minf(_bar.value, 99.0)
 
 
 func _fail(why: String) -> void:
