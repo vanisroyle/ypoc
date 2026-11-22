@@ -1071,6 +1071,13 @@ func _new_sacrifice(p: int, z: int, duel: Duel) -> Dictionary:
 func _tick_sacrifice() -> void:
 	for key in _sacrifice.keys():
 		var s: Dictionary = _sacrifice[key]
+		# Marca de fusion sin soltar cuya carta ya no esta en su ubicacion: resto
+		# de un relevo fallido (p. ej. indice de mano ajustado tras consumir); si
+		# se conserva, reaparece al caer otra carta del mismo id en ese hueco.
+		if s.get("kind", "") == "fusion" and not s["release"] and _duel_ref != null \
+				and (_duel_ref.m.u16(_duel_ref.f5419b0(int(s["p"]), int(s["loc"]), int(s["index"]))) & 0xfff) != int(s["card"]):
+			_sacrifice.erase(key)
+			continue
 		if s["release"] or s["counter"] <= 0x7f:
 			s["counter"] += 8
 		if s["counter"] == 0x88 and s.get("kind", "") != "fusion":
@@ -1463,6 +1470,12 @@ func _begin() -> void:
 		if _sacrifice.has(active["key"]): _sacrifice[active["key"]]["release"] = true
 	var mode: String = active["mode"]
 	var kind: String = active.get("kind", "")
+	# Al arrancar la animacion de fusion toda marca de material debe ir muriendo;
+	# si alguna quedo sin relevo (0x5a perdido) se suelta aqui y se desvanece.
+	if mode == "fusion":
+		for key in _sacrifice:
+			if _sacrifice[key].get("kind", "") == "fusion":
+				_sacrifice[key]["release"] = true
 	# Y40d6c0 / Ka40d8f0 avanzan el retrato en su tick de creación.
 	# Y443640 lo hace también tras el paso 2 del volteo 4040f0.
 	if kind == "hand_set" or (game == "yugi" and mode == "phase_native") \
