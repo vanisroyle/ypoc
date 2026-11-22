@@ -575,9 +575,10 @@ func _frame_kaiba_open() -> void:
 func _frame_detail() -> void:
 	var bg := Assets.texture(_dir + _detail.resource(0))
 	_op(bg, Rect2(Vector2.ZERO, bg.get_size()))
+	var back := Assets.texture("common/card/card_ura.png")
 	var big: Texture2D = CardDB.card_texture(int(_by_index[_detail_card]["internal_id"])) \
-			if _by_index.has(_detail_card) else Assets.texture("common/card/card_ura.png")
-	_op(big, Rect2(Vector2(_num(_detail, 0)), big.get_size()))
+			if _by_index.has(_detail_card) else back
+	_op(big, Rect2(Vector2(_num(_detail, 0)), back.get_size()))
 	var card: Dictionary = _by_index.get(_detail_card, {}) if _detail_card > 0 else {}
 	if _is_monster(card):
 		var line := Assets.texture(_dir + _detail.resource(3))
