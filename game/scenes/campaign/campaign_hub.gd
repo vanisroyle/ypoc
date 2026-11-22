@@ -42,9 +42,18 @@ func _ready() -> void:
 	bg.color = STONE
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(bg)
+	var wall := TextureRect.new()
+	wall.texture = load("res://assets/menu/hub_bg.png")
+	wall.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	wall.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	# El hub posiciona todo con coordenadas fijas del viewport logico (800x600).
+	wall.size = Vector2(800, 600)
+	wall.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(wall)
 	Audio.play_music(MUSIC.get(_menu_game(), ""))
 	_footer()
 	_show(_page if _page != "" else "main")
+
 
 
 func _process(_delta: float) -> void:
