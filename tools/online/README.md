@@ -36,18 +36,24 @@ can route to the room object before the WebSocket upgrade; the text control
 frames (`HOST` / `JOIN` / `ROOM` / `GO` / `ERR`) are the same as the Python
 relay, so the game works against either backend unchanged.
 
-## Free hosting option B — run `relay_server.py`
+## Free hosting option B — Fly.io with the Go relay (`go/`, recommended)
 
-Any always-on free tier works — the script needs only Python + websockets.
-
-**Fly.io** (free allowance covers a small shared VM):
+`go/relay.go` is the same relay as a single static binary — ~15 MB distroless
+image, a few MB RAM, smallest attack surface. Easiest way to run it free:
 
 ```sh
-fly launch --no-deploy          # picks up the Dockerfile, port 8765
-# fly.toml: expose port 8765 as TCP (services.internal_port = 8765)
+cd go
+fly launch --no-deploy          # picks up the Dockerfile
+# fly.toml: services.internal_port = 8765
 fly deploy
 # relay URL: wss://<your-app>.fly.dev
 ```
+
+A `shared-cpu-1x · 256MB` machine is plenty (hundreds of concurrent duels).
+
+## Free hosting option C — run `relay_server.py` anywhere
+
+Any always-on free tier works — the script needs only Python + websockets.
 
 **Render** free web service: new Web Service → this directory →
 `pip install -r requirements.txt` / `python3 relay_server.py --port $PORT`.
