@@ -142,16 +142,17 @@ func texture(rel_path: String) -> Texture2D:
 		return null
 	if not _textures.has(path):
 		var tex: Texture2D
-		if path.begins_with("res://"):
-			# Datos empaquetados (web): el archivo se exporto como recurso importado (.ctex).
-			tex = load(path)
-		else:
+		if FileAccess.file_exists(path):
+			# Fichero en bruto: data/ suelta o packs web (PCKPacker guarda los originales).
 			var image := Image.load_from_file(path)
 			if image != null:
 				# Equivale a la opcion de importacion fix_alpha_border: evita que el color
 				# clave que queda bajo los pixeles transparentes "sangre" al escalar.
 				image.fix_alpha_edges()
 				tex = ImageTexture.create_from_image(image)
+		elif path.begins_with("res://"):
+			# Recurso importado dentro del pck: FileAccess solo veria el .ctex remapeado.
+			tex = load(path)
 		if tex == null:
 			push_error("No se pudo cargar %s" % path)
 			return null

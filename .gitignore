@@ -27,3 +27,7 @@ content.cfg
 PoC Data/
 android-builder.json
 *.import
+
+# Iconos PWA generados por tools/build_web.sh
+game/web_icons/
+game/webdata/
