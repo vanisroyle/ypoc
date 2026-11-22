@@ -100,7 +100,6 @@ func _ready() -> void:
 	_add_key_action("pc_filter", KEY_F)     # editor de mazos: siguiente filtro de la bolsa
 	_add_key_action("pc_sort", KEY_O)       # editor de mazos: ventana de orden
 	_add_key_action("pc_window", KEY_W)     # editor de mazos: plegar/desplegar la bolsa
-	_add_key_action("pc_deck", KEY_D)       # editor de mazos: mazo de otro juego
 
 
 func _add_key_action(action: String, key: Key) -> void:
@@ -322,7 +321,10 @@ func open_joey_demo() -> void:
 
 func open_normal_duel(game: String, start_options := -1) -> void:
 	current_game = game
-	if game == "joey":
+	# Juego combinado: todo duelo corre sobre el motor de Joey (su pool es la union
+	# de los tres) y el rival solo aporta mazo, entrada y janken. Los lanzamientos
+	# sueltos por el launcher conservan su motor original.
+	if game == "joey" or (combined and Paths.has_game("joey")):
 		goto(load("res://scenes/duel/joey_native_normal.gd").new(start_options))
 	else:
 		goto(load("res://scenes/duel/normal_duel.gd").new(game, start_options))
@@ -421,7 +423,13 @@ func record_duel_result(result: int) -> void:
 ## Side, deck_editor.gd con "swap").
 func continue_match(game: String) -> void:
 	current_game = game
-	goto(load("res://scenes/deck_editor/deck_editor.gd").new(game, "swap"))
+	goto(load("res://scenes/deck_editor/deck_editor.gd").new(_duel_deck(game), "swap"))
+
+
+## Mazo que usa el duelo: en el juego combinado es siempre el de Joey (pool unido);
+## en una partida suelta, el del propio juego.
+func _duel_deck(game: String) -> String:
+	return "joey" if combined and Paths.has_game("joey") else game
 
 
 ## Salida valida de la escena 10 (0x459c10): 0x437f40(2) (siguiente duelo del match) y

@@ -29,10 +29,10 @@ engines in Godot and unifies the shell around them:
   rivals stay open for rematches, and Joey keeps his seven AI levels.
 - **One collection**: all 1,113 cards obtainable across the three games feed a
   single shared collection and the deck-building trunk.
-- **Three decks**: each rival is dueled with the deck of *their* game — every
-  engine only runs the card pool it actually supports. Deck Construction opens
-  the real editor directly (trunk, drag & drop, filters, sort, import/export)
-  with YUGI/KAIBA/JOEY tabs to switch decks.
+- **One deck**: all duels run on Joey's engine, whose card pool is the union of
+  all three games — so you build a single deck from every card you own and each
+  rival answers with their own themed deck and AI level. Deck Construction opens
+  the real editor directly (trunk, drag & drop, filters, sort, import/export).
 
 "Remake" means the engine is rebuilt; card art, voices and music come from your
 own copy of the games.
@@ -68,13 +68,12 @@ for the full collection.
 - **Duel** — pick an unlocked rival; toggle **Match mode** for best-of-3 sets
   with a side deck, open **LAN / Online Duel**, or watch saved **Replays**.
 - **Deck Construction** — full editor (trunk, type filters, sorting, side/fusion
-  zones, .ydc import/export). Tabs switch between the three game decks;
-  **D** cycles decks on keyboard.
+  zones, .ydc import/export).
 - **Card List** — the whole obtainable collection with per-card details.
 - **Options** — volume, card set, forbidden cards, screen mode.
 - Keyboard, mouse and gamepad are supported (gamepad drives the hand cursor;
   A = click). Shortcuts inside the editor: **Tab** bag/deck, **S** side deck,
-  **F** filter, **O** sort, **W** expand collection, **D** switch deck.
+  **F** filter, **O** sort, **W** expand collection.
 
 ## Multiplayer
 
