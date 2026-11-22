@@ -325,8 +325,6 @@ func _ready() -> void:
 		_show_detail({})
 	_cursor.z_index = 4000
 	add_child(_cursor)
-	if not _swap:
-		_build_game_tabs()
 	Audio.play_music("%s/voice/stream/%s" % [game, "kaban.wav" if game == "yugi" else "m_kaban.wav"])
 
 
@@ -553,66 +551,6 @@ func _build_static() -> void:
 			_trunk_sprites.append(s)
 	_add_sprite(_tex(_scripts["kaban_detail"].resource(0)), Vector2.ZERO)
 	_place_trunk()
-
-
-## Pestañas de mazo: el juego combinado guarda un mazo por rival (cada motor solo
-## ejecuta su pool). Se colocan sobre la zona del mazo, por encima del fondo.
-func _build_game_tabs() -> void:
-	# Borde superior de la zona del mazo; la bolsa desplegada cubre desde x=584.
-	var x := 262.0
-	for g in Game.GAMES:
-		var b := Button.new()
-		b.text = ("MAZO %s" if Assets.lang == "s" else "%s DECK") % g.to_upper()
-		b.position = Vector2(x, 2.0)
-		b.size = Vector2(100, 19)
-		b.focus_mode = Control.FOCUS_NONE
-		b.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-		b.add_theme_font_size_override("font_size", 10)
-		var normal := StyleBoxFlat.new()
-		normal.bg_color = Color(0.09, 0.06, 0.03, 0.85)
-		normal.border_color = Color(0.45, 0.33, 0.15)
-		normal.set_border_width_all(1)
-		b.add_theme_stylebox_override("normal", normal)
-		var hover := normal.duplicate()
-		hover.border_color = Color(1.0, 0.82, 0.3)
-		b.add_theme_stylebox_override("hover", hover)
-		b.add_theme_stylebox_override("pressed", hover)
-		var active := normal.duplicate()
-		active.border_color = Color(1.0, 0.82, 0.3)
-		active.bg_color = Color(0.32, 0.22, 0.1, 0.9)
-		b.add_theme_stylebox_override("disabled", active)
-		b.add_theme_color_override("font_color", Color(0.85, 0.75, 0.5))
-		b.add_theme_color_override("font_disabled_color", Color(1.0, 0.88, 0.45))
-		if g == game or not Paths.has_game(g):
-			b.disabled = true
-		else:
-			var target: String = g
-			b.pressed.connect(func() -> void: _switch_deck(target))
-		add_child(b)
-		x += 104.0
-
-
-## Atajo de teclado (pc_deck): recorre los mazos instalados sin tocar las pestañas.
-func _cycle_deck() -> void:
-	for n in range(1, Game.GAMES.size() + 1):
-		var g: String = Game.GAMES[(Game.GAMES.find(game) + n) % Game.GAMES.size()]
-		if Paths.has_game(g):
-			_switch_deck(g)
-			return
-
-
-## Cambiar de mazo exige la misma validacion que salir: uno invalido no se puede
-## dejar a medias; uno valido se guarda antes de saltar.
-func _switch_deck(target: String) -> void:
-	if not _deck_valid(_deck):
-		_message("deckerror", "dlg_ok_ok_derr")
-		return
-	if _dirty:
-		SaveData.set_deck(game, _deck.duplicate(true))
-	_save_settings()
-	SaveData.save()
-	Audio.play_sfx("%s/voice/internal/decide.wav" % game)
-	Game.open_deck_editor(target)
 
 
 func _place_trunk() -> void:
@@ -1982,8 +1920,6 @@ func _unhandled_input(event: InputEvent) -> void:
 		_set_filter(FILTERS[wrapi(FILTERS.find(_filter) + 1, 0, FILTERS.size())])
 	elif event.is_action_pressed("pc_sort"):
 		_open_sort()
-	elif event.is_action_pressed("pc_deck"):
-		_cycle_deck()
 	elif event.is_action_pressed("pc_window"):
 		if _nav_region == 4:
 			_set_focus("deck")

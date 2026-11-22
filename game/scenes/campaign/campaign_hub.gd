@@ -188,13 +188,10 @@ func _page_duel() -> void:
 			_show("main")))
 
 
-## Mazo que se edita por defecto: el del proximo rival de la campaña; sin el, el del
-## juego mas completo (joey tiene el pool completo de las 1113 cartas).
+## El juego combinado usa un solo mazo: el de Joey, cuyo pool es la union de las
+## 1113 cartas. Cualquier rival lo enfrenta con su propio mazo tematico.
 func _deck_game() -> String:
-	var next := SaveData.campaign_next()
-	if next != "" and Paths.has_game(next):
-		return next
-	return _menu_game()
+	return "joey" if Paths.has_game("joey") else _most_complete_game()
 
 
 # --- pagina de duelo: paneles de rival --------------------------------------------------------
