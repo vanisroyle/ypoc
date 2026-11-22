@@ -100,6 +100,7 @@ func _ready() -> void:
 	_add_key_action("pc_filter", KEY_F)     # editor de mazos: siguiente filtro de la bolsa
 	_add_key_action("pc_sort", KEY_O)       # editor de mazos: ventana de orden
 	_add_key_action("pc_window", KEY_W)     # editor de mazos: plegar/desplegar la bolsa
+	_add_key_action("pc_deck", KEY_D)       # editor de mazos: mazo de otro juego
 
 
 func _add_key_action(action: String, key: Key) -> void:
