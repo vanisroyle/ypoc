@@ -178,7 +178,8 @@ func _mount_all() -> void:
 			_fail("Corrupt download, reload to retry.")
 			return
 	# Los autoloads que leyeron data/ en _ready (aun vacia) recargan ahora.
-	Assets.reindex()
+	# El indice se guarda en user:// y se reusa mientras no cambie el manifiesto.
+	Assets.reindex_cached(str(_manifest.get("version", "")))
 	CardDB.load_db()
 	Audio.reload_native_tables()
 	SaveData.load_or_create()

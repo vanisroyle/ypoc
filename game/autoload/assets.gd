@@ -41,10 +41,38 @@ func reindex() -> void:
 	_missing.clear()
 	if DirAccess.dir_exists_absolute(Paths.data_dir):
 		_scan(Paths.data_dir, "")
+	_load_voice_packs()
+
+
+func _load_voice_packs() -> void:
 	_voice_packs.clear()
 	var voices: Variant = read_json("voice_manifest.json")
 	if voices is Dictionary:
 		_voice_packs = voices.get("games", {})
+
+
+const INDEX_CACHE_PATH := "user://asset_index.bin"
+
+
+## Variante web: los packs son inmutables entre arranques, asi que el indice se
+## guarda en user:// y se reutiliza mientras no cambie el manifiesto (cache_key).
+## Reindexar 9k archivos a traves de 17 packs montados tarda segundos en movil.
+func reindex_cached(cache_key: String) -> void:
+	if FileAccess.file_exists(INDEX_CACHE_PATH):
+		var f := FileAccess.open(INDEX_CACHE_PATH, FileAccess.READ)
+		var saved: Variant = f.get_var() if f != null else null
+		if saved is Dictionary and saved.get("key") == cache_key and saved.get("index") is Dictionary:
+			_index.clear()
+			_textures.clear()
+			_layouts.clear()
+			_missing.clear()
+			_index = saved["index"]
+			_load_voice_packs()
+			return
+	reindex()
+	var f := FileAccess.open(INDEX_CACHE_PATH, FileAccess.WRITE)
+	if f != null:
+		f.store_var({"key": cache_key, "index": _index})
 
 
 func voice_language(game: String) -> String:
