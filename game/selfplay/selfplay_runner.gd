@@ -33,6 +33,9 @@ func play(decks: Array[Dictionary], first: int, seed: int, cap: int) -> Dictiona
 	var ticks := 0
 	while duel.frame() and ticks < cap:
 		for p in 2:
+			# Zonas en orden nativo; decks[] y winner() van en orden local/rival:
+			# bit del jugador local para que la jugada apunte al mismo indice.
+			var relative: int = p ^ duel.local_native_player
 			for z in 11:
 				var index := engine.m.u16(JoeyMem.zone(p, z)) & 0xfff
 				var card := -1 if index == 0 else int(engine.f4022e0(index) & 0xffff)
@@ -40,7 +43,7 @@ func play(decks: Array[Dictionary], first: int, seed: int, cap: int) -> Dictiona
 				if card != prev:
 					seen[p][z] = card
 					if card >= 0 and prev <= 0:
-						plays.append({"t": ticks, "p": p, "z": z, "card": card})
+						plays.append({"t": ticks, "p": relative, "z": z, "card": card})
 		ticks += 1
 	var commands: Array = []
 	for quad in duel.file_recorded:
@@ -61,7 +64,8 @@ func play(decks: Array[Dictionary], first: int, seed: int, cap: int) -> Dictiona
 func random_deck() -> Dictionary:
 	var pool := PackedInt32Array()
 	for card: Dictionary in CardDB.cards:
-		if int(card.get("pack", 0)) & 4:
+		# Pool union del motor: cartas usables por Joey = bits 1|2|4.
+		if int(card.get("pack", 0)) & 7:
 			pool.append(int(card["internal_id"]))
 	var n := 40 + rng.randi_range(0, 20)
 	var main := PackedInt32Array()
