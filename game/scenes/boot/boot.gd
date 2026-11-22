@@ -82,6 +82,10 @@ func _on_manifest(result: int, code: int, _h: PackedStringArray, body: PackedByt
 		probe: HTTPRequest) -> void:
 	probe.queue_free()
 	if result != HTTPRequest.RESULT_SUCCESS or code != 200:
+		# Sin red: si la cache esta completa se juega igual (los packs ya
+		# bajados se guardan en user:// junto al manifest).
+		if _mount_cached():
+			return
 		_fail("Could not reach the server.")
 		return
 	var parsed: Variant = JSON.parse_string(body.get_string_from_utf8())
@@ -112,7 +116,25 @@ func _cache_valid() -> bool:
 	var f := FileAccess.open(PACK_CACHE, FileAccess.READ)
 	if f == null or f.get_as_text() != _manifest_text:
 		return false
-	for p in _manifest["packs"]:
+	return _files_ok(_manifest)
+
+
+## Monta la cache guardada usando su propio manifest (modo sin conexion).
+func _mount_cached() -> bool:
+	if not FileAccess.file_exists(PACK_CACHE):
+		return false
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(PACK_CACHE))
+	if typeof(parsed) != TYPE_DICTIONARY or not parsed.has("packs"):
+		return false
+	if not _files_ok(parsed):
+		return false
+	_manifest = parsed
+	_mount_all()
+	return true
+
+
+func _files_ok(manifest: Dictionary) -> bool:
+	for p in manifest["packs"]:
 		var path := PACK_DIR.path_join(p["name"])
 		if not FileAccess.file_exists(path):
 			return false
@@ -159,6 +181,7 @@ func _mount_all() -> void:
 	Assets.reindex()
 	CardDB.load_db()
 	Audio.reload_native_tables()
+	SaveData.load_or_create()
 	_start()
 
 
