@@ -92,7 +92,7 @@ func _ready() -> void:
 			(Assets.read_json(Game.rival_deck) if Game.rival_deck != "" else null)
 	if Paths.cmdline_value("scenario") != "":
 		rival = null
-	var rival_name := Game.rival_deck.get_file() if Game.rival_deck is String else \
+	var rival_name: String = Game.rival_deck.get_file() if Game.rival_deck is String else \
 			(str(rival.get("_name")) if rival is Dictionary and rival.get("_name", "") != "" else "ai_decks")
 	if rival is Dictionary:
 		decks[1] = {"main": PackedInt32Array(rival.get("main", [])), "side": PackedInt32Array(rival.get("side", [])),
