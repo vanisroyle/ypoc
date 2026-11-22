@@ -112,7 +112,7 @@ func _draw() -> void:
 func _activate() -> void:
 	if _intro_c != 256 or selected < 0: return
 	if selected == 6:
-		Game.open_title("kaiba", "tutorial")
+		Game.return_home("kaiba", "tutorial")
 	elif not _overlay.busy():
 		Game.open_duel_replay("kaiba", "lesson:%d" % (selected + 1))
 

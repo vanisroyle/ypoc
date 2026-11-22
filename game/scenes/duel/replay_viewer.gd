@@ -785,7 +785,7 @@ func _process(delta: float) -> void:
 		if kind == "replay":
 			# Repeticion guardada: al acabar se vuelve al menu de duelo.
 			Audio.stop_music()
-			Game.open_title(game, "duel")
+			Game.return_home(game, "duel")
 			_files.clear()
 			return
 		# como en el original, al terminar pasa a la siguiente
@@ -1138,7 +1138,7 @@ func _native_card(card_id: int, center: Vector2, size: Vector2, face_up: bool, s
 func _leave_replay() -> void:
 	_files.clear()
 	Audio.stop_music()
-	Game.open_title(game, "duel")
+	Game.return_home(game, "duel")
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -1156,7 +1156,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel") or (button_pressed and event.button_index == MOUSE_BUTTON_RIGHT):
 		Audio.stop_music()
 		if _lesson > 0: Game.open_tutorial(game)
-		else: Game.open_title(game, "duel")
+		else: Game.return_home(game, "duel")
 	elif _tutorial != null and ((event is InputEventMouseButton and event.pressed
 			and event.button_index == MOUSE_BUTTON_LEFT) or (event is InputEventKey
 			and event.pressed and not event.echo and event.keycode in [KEY_ENTER, KEY_KP_ENTER])):

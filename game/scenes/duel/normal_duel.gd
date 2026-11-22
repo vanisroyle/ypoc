@@ -607,7 +607,7 @@ func _hides_rival_hand() -> bool:
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel") and _duel == null:
 		Audio.stop_music()
-		Game.open_title(game, "duel")
+		Game.return_home(game, "duel")
 	elif event is InputEventKey and event.pressed and not event.echo and _duel != null:
 		var bit: int = preload("res://core/duel_input.gd").bits(event, game)
 		if bit != 0:
