@@ -27,7 +27,9 @@ var _page := ""
 var _match := false
 var _root: Control = null
 var _options: Node2D = null
+var _cheat: Control = null
 var _replay_dialog: Control = null
+var _footer_bar: Label = null
 
 
 func _init(page := "") -> void:
@@ -59,7 +61,7 @@ func _input(event: InputEvent) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if _options != null or _replay_dialog != null:
+	if _options != null or _replay_dialog != null or _cheat != null:
 		return
 	if event.is_action_pressed("ui_cancel") or (event is InputEventMouseButton and event.pressed
 			and event.button_index == MOUSE_BUTTON_RIGHT):
@@ -135,6 +137,7 @@ func _page_main() -> void:
 		["list", "Lista de cartas" if Assets.lang == "s" else "Card List", func() -> void:
 			_sfx("decide")
 			Game.open_card_list(_menu_game())],
+		["cheat", "Contrasenas" if Assets.lang == "s" else "Passwords", _open_cheat],
 		["options", "Opciones" if Assets.lang == "s" else "Options", _open_options],
 		["exit", "Salir" if Assets.lang == "s" else "Exit", func() -> void:
 			_back_sfx()
@@ -351,6 +354,19 @@ func rival_name(game: String) -> String:
 
 # --- opciones ---------------------------------------------------------------------------------
 
+func _open_cheat() -> void:
+	if _cheat != null:
+		return
+	_sfx("decide")
+	_cheat = preload("res://scenes/campaign/cheat_dialog.gd").new()
+	_cheat.closed.connect(func() -> void:
+		_sfx("return")
+		_cheat.queue_free()
+		_cheat = null
+		_footer())
+	add_child(_cheat)
+
+
 func _open_options() -> void:
 	_sfx("decide")
 	_options = preload("res://scenes/title/title_options.gd").new(_menu_game())
@@ -373,13 +389,14 @@ func _footer() -> void:
 	for card in pool:
 		owned += int(SaveData.card_count(int(card["internal_id"])) > 0)
 
-	var bar := Label.new()
-	bar.text = ("Colección: %d/%d cartas" if Assets.lang == "s" else "Collection: %d/%d cards") % [owned, pool.size()]
-	bar.add_theme_color_override("font_color", GOLD_LIGHT)
-	bar.add_theme_font_size_override("font_size", 16)
-	bar.position = Vector2(40, 568)
-	bar.size = Vector2(400, 30)
-	add_child(bar)
+	if _footer_bar == null:
+		_footer_bar = Label.new()
+		_footer_bar.add_theme_color_override("font_color", GOLD_LIGHT)
+		_footer_bar.add_theme_font_size_override("font_size", 16)
+		_footer_bar.position = Vector2(40, 568)
+		_footer_bar.size = Vector2(400, 30)
+		add_child(_footer_bar)
+	_footer_bar.text = ("Colección: %d/%d cartas" if Assets.lang == "s" else "Collection: %d/%d cards") % [owned, pool.size()]
 
 
 func _menu_button(text: String, pos: Vector2, size: Vector2, on_press: Callable, disabled := false) -> Button:
