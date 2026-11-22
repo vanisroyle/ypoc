@@ -423,7 +423,7 @@ func _decide() -> void:
 ## 0x45f780 guarda. La vuelta al título usa el barrido 532390(0x13, 0x10, 0, 0x100).
 func _leave() -> void:
 	SaveData.save()
-	Game.open_title(game, "list")
+	Game.return_home(game, "list")
 
 
 # --- panel de detalle (0x45fa60 sobre 0x412c50) ------------------------------------------------

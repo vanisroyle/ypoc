@@ -65,7 +65,7 @@ func _ready() -> void:
 	_button("Otra acción",Vector2(20,288),Vector2(115,34),func() -> void: _buttons|=0x400)
 	_button("Sí",Vector2(520,553),Vector2(70,30),func() -> void: _answer=1; _cursor_ready=false)
 	_button("No",Vector2(595,553),Vector2(70,30),func() -> void: _answer=0; _cursor_ready=false)
-	_button("Volver",Vector2(685,553),Vector2(90,30),func() -> void: Game.open_title("joey"))
+	_button("Volver",Vector2(685,553),Vector2(90,30),func() -> void: Game.return_home("joey", "duel"))
 	_hand_scroll.position=Vector2(20,420)
 	_hand_scroll.size=Vector2(760,130)
 	_hand_scroll.horizontal_scroll_mode=ScrollContainer.SCROLL_MODE_AUTO

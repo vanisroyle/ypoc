@@ -1339,7 +1339,7 @@ func _leave() -> void:
 	_save_settings()
 	SaveData.save()
 	Audio.play_sfx("%s/voice/internal/return.wav" % game)
-	Game.open_title(game, "deck")
+	Game.return_home(game, "deck")
 
 
 func _set_filter(filter: String) -> void:

@@ -220,7 +220,13 @@ func _start_scene_wipe(old_frame: Texture2D, screen: Node, effect := 0x13, waves
 
 
 
+## Sesion combinada: las pantallas vuelven al menu unico con return_home; al
+## entrar a un titulo suelto por el launcher vuelve a false.
+var combined := false
+
+
 func open_launcher() -> void:
+	combined = false
 	current_game = ""
 	# Biblioteca e importador de las copias del usuario (content_setup amplía el launcher).
 	goto(load("res://scenes/launcher/content_setup.gd").new())
@@ -229,6 +235,7 @@ func open_launcher() -> void:
 ## Al volver de otra pantalla (`focus` = opcion de la que se viene) no se repite la portada
 ## de Yugi y el cursor queda en esa opcion.
 func open_title(game: String, focus := "", launcher_cover: CanvasLayer = null) -> void:
+	combined = false
 	if not Paths.has_game(game):
 		open_launcher()
 		return
@@ -246,14 +253,28 @@ func open_title(game: String, focus := "", launcher_cover: CanvasLayer = null) -
 func open_ending(game: String, mode := "credits") -> void:
 	current_game = game
 	var scene: Node2D = load("res://scenes/ending/ending_scene.gd").new(game, mode)
-	scene.finished.connect(open_campaign_hub, CONNECT_ONE_SHOT)
+	scene.finished.connect(open_main_menu, CONNECT_ONE_SHOT)
 	goto(scene)
 
 
-## Campaña: la pantalla de rivales, portada unica del juego. Derrotar a cada rival
-## (yugi -> kaiba -> joey) abre al siguiente; los vencidos admiten revancha.
-func open_campaign_hub() -> void:
-	goto(load("res://scenes/campaign/campaign_hub.gd").new())
+## Menu unico del juego combinado (portada; estructura del menu de Joey):
+## "duel" abre en la pagina de rivales de la campaña (yugi -> kaiba -> joey).
+func open_main_menu(page := "") -> void:
+	combined = true
+	current_game = "yugi"
+	for g in GAMES:
+		if Paths.has_game(g):
+			current_game = g   # joey si esta; el mas completo instalado si no
+	goto(load("res://scenes/campaign/campaign_hub.gd").new(page))
+
+
+## Vuelta atras desde una pantalla: al menu combinado si la sesion lo es, y al
+## titulo del juego si se entro suelto por el launcher.
+func return_home(game: String, focus := "") -> void:
+	if combined:
+		open_main_menu("duel" if focus in ["duel", "lan"] else "")
+	else:
+		open_title(game, focus)
 
 
 func open_deck_editor(game: String) -> void:
@@ -358,7 +379,7 @@ func open_lan(game: String) -> void:
 		else:
 			Lan.close()
 			duel_mode = 0
-			open_title(game, "lan"), CONNECT_ONE_SHOT)
+			return_home(game, "lan"), CONNECT_ONE_SHOT)
 	goto(scene)
 
 
@@ -367,7 +388,7 @@ func lan_lost(game: String) -> void:
 	Lan.close()
 	duel_mode = 0
 	Audio.stop_music()
-	open_title(game)
+	return_home(game, "lan")
 
 
 ## 0x437440 (desde 0x53d9d0 al acabar el duelo): guarda el resultado del duelo y, en match,
@@ -483,9 +504,9 @@ func finish_normal_duel(game: String, winner: int) -> void:
 	if winner == 0:
 		Audio.stop_music()
 		if duel_mode == 3:
-			open_title(game, "duel")
+			return_home(game, "duel")
 		else:
-			open_campaign_hub()
+			open_main_menu("duel")
 		return
 	# Campaña: vencer al rival pendiente desbloquea al siguiente (yugi -> kaiba -> joey).
 	# Solo contra la CPU: los duelos LAN (modo 3) no cuentan.
@@ -497,9 +518,9 @@ func finish_normal_duel(game: String, winner: int) -> void:
 		if completed:
 			open_ending(game)
 		elif duel_mode == 3:
-			open_title(game, "duel")
+			return_home(game, "duel")
 		else:
-			open_campaign_hub()
+			open_main_menu("duel")
 		return
 	var script: GDScript = load("res://scenes/duel/bust_up_scene.gd") if game == "yugi" else load("res://scenes/duel/bust_up_rival.gd")
 	var scene: Node2D = script.new(game, winner)
@@ -507,9 +528,9 @@ func finish_normal_duel(game: String, winner: int) -> void:
 		# Campaña completa: creditos tras el ultimo rival.
 		scene.finished.connect(open_ending.bind(game), CONNECT_ONE_SHOT)
 	elif duel_mode == 3:
-		scene.finished.connect(open_title.bind(game, "duel"), CONNECT_ONE_SHOT)
+		scene.finished.connect(return_home.bind(game, "duel"), CONNECT_ONE_SHOT)
 	else:
-		scene.finished.connect(open_campaign_hub, CONNECT_ONE_SHOT)
+		scene.finished.connect(open_main_menu.bind("duel"), CONNECT_ONE_SHOT)
 	goto(scene)
 
 

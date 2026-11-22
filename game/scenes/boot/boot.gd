@@ -58,7 +58,7 @@ func _start() -> void:
 			if Paths.has_game(game):
 				any_game = true
 		if Paths.migration_source == "" and not CloudSync.linked() and any_game:
-			Game.open_campaign_hub()
+			Game.open_main_menu()
 		else:
 			Game.open_launcher()
 	queue_free()
