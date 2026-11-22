@@ -23,7 +23,7 @@ const DUEL_VIEWER_PATH := "res://scenes/duel/replay_viewer.gd"
 
 var current_game := ""
 ## Mazo del rival elegido al entrar al duelo desde el menu (0x437c60), "" = el de demo1.
-var rival_deck := ""
+var rival_deck: Variant = ""
 ## Modo del duelo (DAT_005af778, 0x437f40): 0 duelo normal, 1 torneo (match al mejor de 3).
 var duel_mode := 0
 ## Match: duelo actual 1..3 (DAT_005af76b), resultado de cada duelo (DAT_005af768[]: 1 gana el
@@ -36,6 +36,7 @@ var _screen_replay_frame := 0
 var _screen_host: Node
 var _scene_wipe: Node
 const SCENE_WIPE := preload("res://core/scene_wipe.gd")
+const AI_DECKS := preload("res://core/ai_decks.gd")
 ## Contador global por vuelta del bucle principal (NativeClock.HZ): Yugi40c140(5aed18), Kaiba40c370(5b1d38).
 ## Persiste entre escenas; los titulos/tutoriales lo reinician en sus puntos nativos.
 var native_tick := 0
@@ -100,6 +101,11 @@ func _ready() -> void:
 	_add_key_action("pc_filter", KEY_F)     # editor de mazos: siguiente filtro de la bolsa
 	_add_key_action("pc_sort", KEY_O)       # editor de mazos: ventana de orden
 	_add_key_action("pc_window", KEY_W)     # editor de mazos: plegar/desplegar la bolsa
+	# --ai-decks-dump: lista los mazos extra de la CPU (generados + comunidad).
+	if Paths.cmdline_value("ai-decks-dump") != "":
+		for g in GAMES:
+			for f in AI_DECKS.files(g):
+				print("ai_decks: ", g, "/", f)
 
 
 func _add_key_action(action: String, key: Key) -> void:
@@ -313,7 +319,8 @@ var joey_demo_deck := ""
 func open_joey_demo() -> void:
 	duel_mode = 0
 	joey_demo = true
-	joey_demo_deck = choose_rival_deck("joey")
+	# La demo lee su mazo por ruta: nunca un Dictionary de AIDecks.
+	joey_demo_deck = _native_rival_deck("joey")
 	rival_deck = choose_rival_deck("joey")
 	# Empieza el lado de arriba (nativo 0 con el local 1 de la demostracion), como hasta ahora.
 	open_normal_duel("joey", 1)
@@ -443,7 +450,16 @@ func after_swap(game: String) -> void:
 ## tienen de las de este juego (0x45dd50, CARD_Pack con el bit del juego) y la racha
 ## (DAT_00a11215: 1 gana el jugador, 2 la CPU; DAT_00a11216: duelos seguidos). Sin sufijo
 ## especial, uno de 01..04 al azar. Los azares son el MT de interfaz (0x531140 / 0x401ba0).
-func choose_rival_deck(game: String) -> String:
+## Devuelve una ruta json nativa o, a veces, un Dictionary de AIDecks (los mazos
+## generados y los de la comunidad en PoC Data/ai_decks/<juego>).
+func choose_rival_deck(game: String) -> Variant:
+	var extra := AI_DECKS.pick(game, func(): return UiRandom.draw())
+	if not extra.is_empty():
+		return extra
+	return _native_rival_deck(game)
+
+
+func _native_rival_deck(game: String) -> String:
 	var pool := CardDB.obtainable_in(game)
 	var owned := 0
 	for card in pool:

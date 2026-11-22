@@ -88,14 +88,19 @@ func _ready() -> void:
 			return
 		decks.append({"main": PackedInt32Array(original.get("main", [])), "side": PackedInt32Array(original.get("side", [])), "fusion": PackedInt32Array(original.get("fusion", []))})
 	# Mazo de Yugi elegido por 0x437c60 al entrar desde el menu (cpu*.ydc convertido a json).
-	var rival: Variant = Assets.read_json(Game.rival_deck) if Game.rival_deck != "" and Paths.cmdline_value("scenario") == "" else null
+	var rival: Variant = Game.rival_deck if Game.rival_deck is Dictionary else \
+			(Assets.read_json(Game.rival_deck) if Game.rival_deck != "" else null)
+	if Paths.cmdline_value("scenario") != "":
+		rival = null
+	var rival_name := Game.rival_deck.get_file() if Game.rival_deck is String else \
+			(str(rival.get("_name")) if rival is Dictionary and rival.get("_name", "") != "" else "ai_decks")
 	if rival is Dictionary:
 		decks[1] = {"main": PackedInt32Array(rival.get("main", [])), "side": PackedInt32Array(rival.get("side", [])),
 				"fusion": PackedInt32Array(rival.get("fusion", []))}
 	var active: Dictionary = SaveData.data.get("decks", {}).get(game, {})
 	if active.get("main", []).size() >= 40 and active.get("main", []).size() <= 80:
 		decks[0] = {"main": PackedInt32Array(active.get("main", [])), "side": PackedInt32Array(active.get("side", [])), "fusion": PackedInt32Array(active.get("fusion", []))}
-		_source = "Tu mazo activo · rival: " + (Game.rival_deck.get_file() if rival is Dictionary else "mazo original")
+		_source = "Tu mazo activo · rival: " + (rival_name if rival is Dictionary else "mazo original")
 	else:
 		_source = "Mazos originales (sin mazo activo válido)"
 	decks = _prepare_duel_decks(decks)
