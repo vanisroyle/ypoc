@@ -100,6 +100,19 @@ html = open(html_path, encoding="utf-8").read()
 assert "</head>" in html, "index.html sin </head>"
 html = html.replace("</head>", shim + "\t</head>", 1)
 open(html_path, "w", encoding="utf-8").write(html)
+
+# El service worker cacheaba "index.wasm" al vuelo; ahora cachea las partes,
+# o el chequeo offline de navegacion nunca encuentra el wasm y muestra la
+# pagina de sin conexion.
+sw_path = os.path.join(out, "index.service.worker.js")
+sw = open(sw_path, encoding="utf-8").read()
+cached = ["wasm/parts.json"] + ["wasm/" + n for n in names]
+old = '"index.wasm"'
+new = ",".join(json.dumps(n) for n in cached)
+assert old in sw, "index.wasm no figura en el service worker"
+sw = sw.replace(old, new)
+open(sw_path, "w", encoding="utf-8").write(sw)
+
 print("wasm troceado: %d partes, %d bytes" % (len(names), len(data)))
 PYEOF
 
