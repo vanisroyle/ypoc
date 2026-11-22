@@ -15,6 +15,7 @@ TOOL_TOP = {"tools/pyproject.toml", "tools/prepare_public.py", "tools/build_wind
             "tools/online/worker/worker.js", "tools/online/worker/wrangler.toml",
             "tools/online/worker/.gitignore",
             "tools/online/go/relay.go", "tools/online/go/go.mod", "tools/online/go/go.sum", "tools/online/go/Dockerfile",
+            "tools/gen_ai_decks.py",
             "tools/tests/test_public_import.py", "tools/tests/test_media_import.py",
             "tools/tests/test_compact_import.py", "tools/tests/test_updater.py", "tools/tests/test_card_translations.py", "tools/tests/test_reviewed_card_pack.py",
             ".github/workflows/build-windows.yml", "game/export_presets.cfg"}
@@ -32,6 +33,8 @@ def allowed(relative: Path) -> bool:
         return True
     if path == "game/share_smoke.gd":
         return False
+    if path.startswith("game/ai_decks/"):
+        return relative.suffix == ".json"
     if path.startswith("game/"):
         if any(part in {".godot", "assets", "tests", "artifacts", "temp", "scenarios"} for part in relative.parts):
             return False
