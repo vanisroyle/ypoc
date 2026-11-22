@@ -89,6 +89,16 @@ func add_card(internal_id: int, copies := 1) -> void:
 	data["collection"][key] = card_count(internal_id) + copies
 
 
+## Contrasena del jugador: sube a `copies` las copias de una carta (como unlock_all, una sola).
+func unlock_card(internal_id: int, copies := 3) -> int:
+	data.erase("starter_pending")
+	var key := str(internal_id)
+	var before := card_count(internal_id)
+	data["collection"][key] = maxi(copies, before)
+	save()
+	return int(data["collection"][key]) - before
+
+
 ## Cartas ya vistas en la lista: las que se tienen y no se han visto llevan el "NEW".
 func is_seen(internal_id: int) -> bool:
 	return data["seen"].has(str(internal_id))
