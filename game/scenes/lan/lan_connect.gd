@@ -368,12 +368,16 @@ func _list_step(_mx: int, _my: int) -> void:
 	if _online:
 		# El codigo del anfitrion abre la sesion; un clic fuera del campo lo
 		# reenfoca y Decidir une cuando hay codigo.
-		_code.text = _code.text.to_upper()
+		var upper := _code.text.to_upper()
+		if upper != _code.text:
+			# Reasignar el texto reinicia el caret: solo si cambio.
+			_code.text = upper
+			_code.caret_column = upper.length()
 		if _clicked and not Rect2(_code.position, Vector2(_code.size.x, 24)).has_point(_mouse):
 			_code.grab_focus()
 		if _code.text.strip_edges().length() >= 4 and _key(6):
 			_code.release_focus()
-			if Lan.join_online(_code.text) == OK:
+			if Lan.join_online(_code.text, _name.text, game) == OK:
 				_state = 7
 				_t = 0
 				_sound("decide")
