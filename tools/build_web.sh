@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Exporta la version web/PWA del juego (game/dist/web/):
-#   - mete "PoC Data/resources" dentro del pck como res://webdata (ver paths.gd)
+#   - trocea "PoC Data/resources" en packs/*.pck de ~20 MB que el juego descarga
+#     al arrancar (ver boot.gd); el pck principal queda pequeno
 #   - genera los iconos PWA desde assets/icons/launcher.svg
 #   - deja _headers (COOP/COEP, requerido por SharedArrayBuffer) en la salida
 # Requiere: Godot 4.7.2 con plantillas de exportacion web, ImageMagick.
@@ -20,16 +21,14 @@ mkdir -p "$ROOT/game/web_icons"
 	--out="$ROOT/game/web_icons/icon" --sizes=144,180,512 >/dev/null 2>&1 || {
 	echo "aviso: no se generaron iconos; comprueba _svg2png.gd" >&2; }
 
-# 2. Recursos dentro del arbol del proyecto (solo para exportar).
-rm -rf "$ROOT/game/webdata"
-cp -al "$DATA" "$ROOT/game/webdata" 2>/dev/null || cp -r "$DATA" "$ROOT/game/webdata"
-
-cleanup() { rm -rf "$ROOT/game/webdata"; }
-trap cleanup EXIT
-
-# 3. Exportacion web.
+# 2. Exportacion web (sin webdata: viaja en packs/ aparte).
 mkdir -p "$OUT"
 "$GODOT" --headless --path "$ROOT/game" --export-release "Web" "$OUT/index.html"
+
+# 3. Packs descargables de ~20 MB (limite de Cloudflare Pages).
+rm -rf "$OUT/packs"
+"$GODOT" --headless --path "$ROOT/game" --script res://_mkpacks.gd -- \
+	--src="$DATA" --out="$OUT/packs"
 
 # 4. Cabeceras para Cloudflare Pages / Netlify (aislamiento cross-origin).
 cat > "$OUT/_headers" <<'HDR'
