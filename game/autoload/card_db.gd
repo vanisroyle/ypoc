@@ -66,6 +66,11 @@ func obtainable_in(game: String) -> Array[Dictionary]:
 	return _filter(PACK_BITS[game])
 
 
+## Todas las cartas obtenibles en cualquiera de los tres juegos (union de packs).
+func obtainable() -> Array[Dictionary]:
+	return _filter(PACK_BITS["yugi"] | PACK_BITS["kaiba"] | PACK_BITS["joey"])
+
+
 func usable_in(game: String) -> Array[Dictionary]:
 	return _filter(USABLE_BITS[game])
 
