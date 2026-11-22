@@ -22,7 +22,8 @@ TOOL_TOP = {"tools/pyproject.toml", "tools/prepare_public.py", "tools/build_wind
 OWN_ASSETS = {"game/assets/music/launcher_theme.mp3",
               "game/assets/backgrounds/yugi_duel.jpg",
               "game/assets/backgrounds/joey_duel.png",
-              "game/assets/backgrounds/kaiba_duel.png"}
+              "game/assets/backgrounds/kaiba_duel.png",
+              "game/assets/menu/hub_bg.png"}
 LAUNCHER_ART = {"game/assets/icons/launcher.svg", "game/assets/icons/launcher.ico"}
 README_SCREENSHOTS = {"docs/images/launcher-library-en.png", "docs/images/launcher-import-en.png"}
 
