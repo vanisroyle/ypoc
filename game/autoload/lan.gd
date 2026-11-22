@@ -193,9 +193,9 @@ func host_online(player_name: String, game_id: String) -> int:
 
 
 ## Unirse en linea por codigo de sala; el rele enlaza ambos lados.
-func join_online(code: String) -> int:
+func join_online(code: String, player_name: String, game_id: String) -> int:
 	_finish_close(false)
-	_reset(local_name, game)
+	_reset(player_name, game_id)
 	var url := relay_url()
 	if url == "":
 		return ERR_UNCONFIGURED
@@ -454,8 +454,10 @@ func _poll() -> void:
 			_close_timed_out = true
 			_finish_close(true)
 		return
-	# El invitado no llego a conectar (anfitrion desaparecido o lleno).
-	if state == State.JOINING and _remote_peer == 0 \
+	# El invitado no llego a conectar (anfitrion desaparecido o lleno), o el rele
+	# cerro antes de enlazar al anfitrion en linea.
+	if _remote_peer == 0 \
+			and (state == State.JOINING or (online and state == State.HOSTING)) \
 			and _peer.get_connection_status() == MultiplayerPeer.CONNECTION_DISCONNECTED:
 		_lose()
 
