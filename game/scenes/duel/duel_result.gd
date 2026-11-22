@@ -229,7 +229,8 @@ static func replay_files(game_id: String) -> PackedStringArray:
 ## (0x4370b0 -> 0x436f60) y, si falla, el estado 4 avisa (0x459550) y vuelve a la lista.
 ## Si el nombre ya existe se confirma con el modo 2 del mismo cuadro (deck_c/overwrite.txt).
 func _save_replay() -> void:
-	var d: PocDialog = load("res://scenes/deck_editor/deck_file_dialog.gd").for_replay(game, 4, replay_files(game))
+	# La grabacion se archiva bajo el motor (joey), no el tema del rival.
+	var d: PocDialog = load("res://scenes/deck_editor/deck_file_dialog.gd").for_replay(game, 4, replay_files(engine))
 	d.closed.connect(func(id: String) -> void:
 		if id == "ok":
 			_write_replay(d.chosen_name)
@@ -241,7 +242,7 @@ func _save_replay() -> void:
 
 
 func _write_replay(name: String, confirmed := false) -> void:
-	var path := replays_dir(game).path_join(name + ".ydr")
+	var path := replays_dir(engine).path_join(name + ".ydr")
 	if FileAccess.file_exists(path) and not confirmed:
 		var dir := "%s/deck_c/" % game
 		var d := PocDialog.new(Assets.texture(dir + Assets.layout(dir + "overwrite.txt").resource(0)))
