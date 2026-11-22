@@ -31,6 +31,16 @@ npx wrangler deploy
 # relay URL: wss://poc-online-relay.<your-account>.workers.dev
 ```
 
+Test it before deploying — `wrangler dev` runs the Worker and Durable
+Objects locally, no account needed:
+
+```sh
+cd worker
+npx wrangler dev --port 8787
+# game config: { "online": { "relay": "ws://localhost:8787" } }
+# verified: two game instances link, exchange packets, close cleanly
+```
+
 The game client sends `?op=host` / `?op=join&code=…` in the URL so the Worker
 can route to the room object before the WebSocket upgrade; the text control
 frames (`HOST` / `JOIN` / `ROOM` / `GO` / `ERR`) are the same as the Python
