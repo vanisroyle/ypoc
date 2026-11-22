@@ -61,6 +61,18 @@ fly deploy
 
 A `shared-cpu-1x · 256MB` machine is plenty (hundreds of concurrent duels).
 
+Flags (abuse protection, all optional):
+
+```
+-maxconn 1024   global connection cap
+-maxip 16       connections per client IP (local host+guest testing is fine)
+-roomttl 10m    public/private rooms that nobody joins expire
+-key SECRET     if set, clients must send ?key=SECRET (online.key in system.json)
+```
+
+Client IP honors `Fly-Client-IP` / `X-Forwarded-For` when deployed behind
+Fly/Cloudflare-style proxies.
+
 ## Free hosting option C — run `relay_server.py` anywhere
 
 Any always-on free tier works — the script needs only Python + websockets.
@@ -75,6 +87,8 @@ websockets`, open TCP 8765, run under tmux/systemd. URL: `ws://<ip>:8765`.
 
 ## In the game
 
-LAN Duel → name → click **MODE** to switch to ONLINE → Host shows a room code
-to share; Guest types it and presses Enter. Everything after (deck sync, duel,
-disconnect handling) is the same as LAN play.
+LAN Duel → name → click **MODE** to switch to ONLINE → pick **PUBLIC or
+PRIVATE** → Host shows a room code; a public room also appears in every
+guest's list. Guest either clicks a listed public room or types a private
+code and presses Enter. Everything after (deck sync, duel, disconnect
+handling) is the same as LAN play.

@@ -166,6 +166,11 @@ func relay_url() -> String:
 	return str(SaveData.data.get("online", {}).get("relay", "")).strip_edges()
 
 
+## Clave compartida opcional (online.key en system.json); vacia = rele abierto.
+func online_key() -> String:
+	return str(SaveData.data.get("online", {}).get("key", "")).strip_edges()
+
+
 ## Codigo de sala devuelto por el rele al hospedar en linea (vacio hasta "ROOM").
 func room_code() -> String:
 	return _peer.room_code if online and _peer is RelayPeer else ""
@@ -173,14 +178,14 @@ func room_code() -> String:
 
 ## Hospedar en linea: abre sala en el rele; players() vale 2 cuando el invitado enlaza
 ## ("GO" -> peer_connected -> saludo HELLO igual que en ENet).
-func host_online(player_name: String, game_id: String) -> int:
+func host_online(player_name: String, game_id: String, public := false) -> int:
 	_finish_close(false)
 	_reset(player_name, game_id)
 	var url := relay_url()
 	if url == "":
 		return ERR_UNCONFIGURED
 	_peer = RelayPeer.new()
-	var err: int = _peer.create_server(url)
+	var err: int = _peer.create_server(url, 0, 0, public, online_key())
 	if err != OK:
 		_peer = null
 		return err
@@ -200,7 +205,7 @@ func join_online(code: String, player_name: String, game_id: String) -> int:
 	if url == "":
 		return ERR_UNCONFIGURED
 	_peer = RelayPeer.new()
-	var err: int = _peer.create_client(url, code)
+	var err: int = _peer.create_client(url, code, online_key())
 	if err != OK:
 		_peer = null
 		return err
@@ -211,6 +216,47 @@ func join_online(code: String, player_name: String, game_id: String) -> int:
 	joined_address = url
 	state = State.JOINING
 	return OK
+
+
+## Invitado en linea que aun no eligio sala: conecta al rele solo para
+## listar las salas publicas y despues se une por codigo o desde la lista.
+func browse_online(player_name: String, game_id: String) -> int:
+	_finish_close(false)
+	_reset(player_name, game_id)
+	var url := relay_url()
+	if url == "":
+		return ERR_UNCONFIGURED
+	_peer = RelayPeer.new()
+	var err: int = _peer.browse(url, online_key())
+	if err != OK:
+		_peer = null
+		return err
+	_peer.peer_connected.connect(_on_peer_connected)
+	_peer.peer_disconnected.connect(_on_peer_disconnected)
+	online = true
+	is_host = false
+	joined_address = url
+	state = State.BROWSING
+	return OK
+
+
+## Tras browse_online: entrar a la sala elegida (publica o por codigo).
+func join_room(code: String) -> int:
+	if _peer == null or not _peer is RelayPeer:
+		return ERR_UNCONFIGURED
+	var err: int = _peer.join_room(code)
+	if err == OK:
+		state = State.JOINING
+	return err
+
+
+func public_rooms() -> PackedStringArray:
+	return _peer.public_rooms if online and _peer is RelayPeer else PackedStringArray()
+
+
+func refresh_rooms() -> void:
+	if online and _peer is RelayPeer:
+		_peer.list_rooms()
 
 
 ## 443860: se une a la partida elegida. La conexion termina en segundo plano: players() pasa a
@@ -457,7 +503,7 @@ func _poll() -> void:
 	# El invitado no llego a conectar (anfitrion desaparecido o lleno), o el rele
 	# cerro antes de enlazar al anfitrion en linea.
 	if _remote_peer == 0 \
-			and (state == State.JOINING or (online and state == State.HOSTING)) \
+			and (state == State.JOINING or (online and (state == State.HOSTING or state == State.BROWSING))) \
 			and _peer.get_connection_status() == MultiplayerPeer.CONNECTION_DISCONNECTED:
 		_lose()
 
