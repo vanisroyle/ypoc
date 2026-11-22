@@ -73,8 +73,10 @@ export class Room {
         const roles = this._peers().map((p) => this._role(p));
         if (!roles.includes("host")) {
           ws.send("ERR no such room");
+          ws.close(4000, "no such room");
         } else if (roles.includes("guest")) {
           ws.send("ERR room full");
+          ws.close(4000, "room full");
         } else {
           ws.serializeAttachment({ role: "guest" });
           for (const p of this._peers()) p.send("GO");
@@ -82,9 +84,11 @@ export class Room {
       }
       return;
     }
-    // Trama binaria del juego: copia al otro lado.
+    // Trama binaria del juego: copia al otro lado. Solo entre sockets con rol:
+    // un tercero rechazado no puede leer ni inyectar paquetes de la partida.
+    if (!this._role(ws)) return;
     for (const p of this._peers()) {
-      if (p !== ws) p.send(message);
+      if (p !== ws && this._role(p)) p.send(message);
     }
   }
 
@@ -97,6 +101,8 @@ export class Room {
   }
 
   _dropPartner(ws) {
+    // Un socket sin rol (rechazado o sin saludar) no arrastra a la partida.
+    if (!this._role(ws)) return;
     for (const p of this._peers()) {
       if (p !== ws) {
         try {
