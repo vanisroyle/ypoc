@@ -29,6 +29,8 @@ var _rx: Array[PackedByteArray] = []
 var room_code := ""
 ## Motivo textual del ultimo rechazo del rele (para mensajes).
 var error_reason := ""
+## Salas publicas abiertas devueltas por el rele (tras "GAMES", solo invitado).
+var public_rooms: PackedStringArray = []
 
 
 func _dial(url: String, hello: String) -> int:
@@ -56,14 +58,37 @@ static func _sep(url: String) -> String:
 ## Anfitrion en linea: abre sala en el rele. La senal peer_connected llega en poll()
 ## cuando el rele enlaza al invitado ("GO"). ?op=host guia a reles que rutean por
 ## la URL antes del upgrade (p.ej. Cloudflare Workers); el rele Python la ignora.
-func create_server(url: String, _port := 0, _peers := 0) -> int:
-	return _dial(url + _sep(url) + "?op=host", "HOST")
+func create_server(url: String, _port := 0, _peers := 0, public := false, key := "") -> int:
+	var query := "op=host"
+	if key != "":
+		query += "&key=" + key.uri_encode()
+	return _dial(url + _sep(url) + "?" + query, "HOST PUB" if public else "HOST")
 
 
 ## Invitado en linea: entra a la sala del codigo.
-func create_client(url: String, code: String) -> int:
+func create_client(url: String, code: String, key := "") -> int:
 	var clean := code.strip_edges().to_upper()
-	return _dial(url + _sep(url) + "?op=join&code=" + clean, "JOIN %s" % clean)
+	var query := "op=join&code=" + clean.uri_encode()
+	if key != "":
+		query += "&key=" + key.uri_encode()
+	return _dial(url + _sep(url) + "?" + query, "JOIN %s" % clean)
+
+
+## Invitado en modo exploracion: conecta y recibe la lista publica ("GAMES")
+## sin unirse todavia; join_room() fija la sala despues.
+func browse(url: String, key := "") -> int:
+	var query := "op=list"
+	if key != "":
+		query += "&key=" + key.uri_encode()
+	return _dial(url + _sep(url) + "?" + query, "LIST")
+
+
+## Tras browse(): entrar a una sala publica o privada por codigo.
+func join_room(code: String) -> int:
+	if _ws == null or _ws.get_ready_state() != WebSocketPeer.STATE_OPEN:
+		return ERR_UNAVAILABLE
+	_ws.send_text("JOIN " + code.strip_edges().to_upper())
+	return OK
 
 
 func poll() -> void:
@@ -98,8 +123,19 @@ func _control(text: String) -> void:
 				peer_connected.emit(_remote_id)
 		"ERR":
 			error_reason = text.substr(4) if text.length() > 4 else text
+		"GAMES":
+			# Lista de salas publicas libres (respuesta a list_rooms()).
+			public_rooms = PackedStringArray()
+			if text.length() > 6:
+				public_rooms = PackedStringArray(text.substr(6).split(" "))
 		_:
 			pass
+
+
+## Invitado: pide al rele la lista de salas publicas abiertas (pre-JOIN).
+func list_rooms() -> void:
+	if _ws != null and _ws.get_ready_state() == WebSocketPeer.STATE_OPEN:
+		_ws.send_text("LIST")
 
 
 ## MultiplayerPeer.get_available_packet_count.
