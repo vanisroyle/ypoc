@@ -18,6 +18,9 @@ func _init() -> void:
 	storage_dir = cmdline_value("storage")
 	if storage_dir == "":
 		storage_dir = _base_dir().path_join("PoC Data")
+	if OS.has_feature("web"):
+		# En el navegador solo user:// es escribible (IndexedDB persiste guardado).
+		storage_dir = "user://poc-data"
 	storage_dir = ProjectSettings.globalize_path(storage_dir)
 	storage_error = not _is_writable(storage_dir)
 	if not storage_error:
@@ -47,6 +50,9 @@ func _resolve_data_dir() -> String:
 	var override := cmdline_value("data")
 	if override != "":
 		return override
+	if OS.has_feature("web"):
+		# Los recursos viajan dentro del pck de la exportacion web.
+		return "res://webdata"
 	var portable := resources_path()
 	if FileAccess.file_exists(portable.path_join("inventory.json")):
 		return portable
