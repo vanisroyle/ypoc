@@ -180,9 +180,10 @@ func _menu_game() -> String:
 	return "joey" if Paths.has_game("joey") else "yugi"
 
 
-func _gui_input(event: InputEvent) -> void:
+func _input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-		# Clic sobre una cifra: la selecciona y la gira (tap-friendly).
+		# Clic sobre una cifra: la selecciona y la gira (tap-friendly). En _input:
+		# el PanelContainer intermedio puede no dejar llegar el evento a _gui_input.
 		for i in _boxes.size():
 			if _boxes[i].get_global_rect().has_point(event.global_position):
 				if i == _cursor:
@@ -191,9 +192,7 @@ func _gui_input(event: InputEvent) -> void:
 				_paint_cursor()
 				accept_event()
 				return
-
-
-func _input(event: InputEvent) -> void:
+		return
 	# _input, no _unhandled_key_input: las flechas y el Enter no deben llegar a la
 	# navegacion de botones antes de que las vean las ruedas de digitos.
 	if not event is InputEventKey or not event.pressed or event.echo:
