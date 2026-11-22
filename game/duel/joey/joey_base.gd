@@ -20,6 +20,8 @@ var visual_busy_site := 0
 var visual_object_query: Callable
 ## Estado del widget de fase y ficha bajo el raton, propiedad del renderer.
 var visual_phase_hover_query: Callable
+## Politica aprendida por self-play (AIPolicy o null): puntua candidatos en f5af600.
+var ai_policy: AIPolicy
 const _VISUAL_ARENA := JoeyMem.STACK + JoeyMem.STACK_SIZE
 const _VISUAL_OBJECT_SIZE := 0x40
 const _VISUAL_OBJECT_MAX := 512

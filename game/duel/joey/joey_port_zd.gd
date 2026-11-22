@@ -452,6 +452,23 @@ func f5af600(p: int, index: int) -> int:
 				result = i
 		if result >= 0:
 			return result
+	# Politica aprendida por self-play (PoC Data/ai_policy.json): en el fallback generico
+	# puntua cada candidato por stat + peso entrenado en lugar de solo stat.
+	if ai_policy != null:
+		var trained := -INF
+		var picked := -1
+		for i in range(count):
+			if f5afc10(i) != 0:
+				continue
+			var candidate := m.u16(0xa582a4 + i * 4) & 0xfff
+			var card_id := f4022e0(candidate) & 0xffff
+			var score: float = maxi(f4027b0(candidate) & 0xffff, f402800(candidate) & 0xffff) \
+					+ ai_policy.weight(card_id) * AIPolicy.WEIGHT_SCALE
+			if score > trained:
+				trained = score
+				picked = i
+		if picked >= 0:
+			return picked
 	var best := 0
 	var result := -1
 	var available := 0

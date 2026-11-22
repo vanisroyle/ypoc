@@ -32,6 +32,11 @@ engines in Godot and unifies the shell around them:
   generated competitive builds per rival (beatdown and bastion), and any decks
   you drop in `PoC Data/ai_decks/<rival>/` (`.ydc` or `.json`). The AI reaches
   for the extra pool more often as your win streak grows.
+- **Self-play training** (dev tool, not shipped in builds):
+  `tools/selfplay/run_selfplay.bat [games]` plays CPU-vs-CPU matches headless
+  (~600/hour), then `tools/selfplay/train.py` distills the win signal into
+  `PoC Data/ai_policy.json` — per-card weights the rival decision layer blends
+  with its classic heuristic on every pick. Delete the file to revert.
 - **One collection**: all 1,113 cards obtainable across the three games feed a
   single shared collection and the deck-building trunk.
 - **One deck**: all duels run on Joey's engine, whose card pool is the union of

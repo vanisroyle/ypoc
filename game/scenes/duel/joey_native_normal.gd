@@ -50,7 +50,10 @@ func _native_phase_hover() -> Dictionary:
 
 func _create_duel() -> Duel:
 	var adapter := JoeyPresentationAdapter.create_native(Paths.data_dir)
-	if adapter != null: adapter.native_normal_kind = 1 if Game.duel_mode == 1 else 0
+	if adapter != null:
+		adapter.native_normal_kind = 1 if Game.duel_mode == 1 else 0
+		# Politica aprendida por self-play; sin el JSON el motor conserva su IA original.
+		adapter.engine.ai_policy = AIPolicy.load_from(Paths.storage_dir.path_join(AIPolicy.PATH_NAME))
 	if adapter != null and Game.joey_demo:
 		# Demostracion (D35): tipo 7, los dos lados de la CPU, jugador local nativo 1.
 		adapter.native_normal_kind = 7

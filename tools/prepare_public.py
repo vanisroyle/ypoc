@@ -39,6 +39,8 @@ def allowed(relative: Path) -> bool:
         if any(part in {".godot", "assets", "tests", "artifacts", "temp", "scenarios"} for part in relative.parts):
             return False
         return relative.suffix in {".gd", ".tscn", ".godot", ".gdshader", ".gdshaderinc"}
+    if path.startswith("tools/selfplay/"):
+        return relative.suffix in {".py", ".bat"}
     if path.startswith("tools/pocx/") and len(relative.parts) == 3:
         return relative.suffix == ".py" or relative.name == "color_key_overrides.json"
     return False
