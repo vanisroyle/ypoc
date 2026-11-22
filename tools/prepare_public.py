@@ -13,6 +13,7 @@ TOP = {"docs/PRIVACY.md","RELEASE_NOTES.md", "README.md", "THIRD_PARTY_NOTICES.m
 TOOL_TOP = {"tools/pyproject.toml", "tools/prepare_public.py", "tools/build_windows.py", "tools/build_handheld.sh", "tools/importer_entry.py", "tools/trace_logo_contours.py",
             "tools/online/relay_server.py", "tools/online/requirements.txt", "tools/online/Dockerfile", "tools/online/README.md",
             "tools/online/worker/worker.js", "tools/online/worker/wrangler.toml",
+            "tools/online/go/relay.go", "tools/online/go/go.mod", "tools/online/go/go.sum", "tools/online/go/Dockerfile",
             "tools/tests/test_public_import.py", "tools/tests/test_media_import.py",
             "tools/tests/test_compact_import.py", "tools/tests/test_updater.py", "tools/tests/test_card_translations.py", "tools/tests/test_reviewed_card_pack.py",
             ".github/workflows/build-windows.yml", "game/export_presets.cfg"}
