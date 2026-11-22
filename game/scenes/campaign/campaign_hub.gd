@@ -136,7 +136,7 @@ func _add_panel(i: int, rival: Dictionary, state: String, open: bool) -> void:
 
 
 func _footer() -> void:
-	var pool := CardDB.obtainable_in("joey")
+	var pool := CardDB.obtainable()
 	var owned := 0
 	for card in pool:
 		owned += int(SaveData.card_count(int(card["internal_id"])) > 0)
