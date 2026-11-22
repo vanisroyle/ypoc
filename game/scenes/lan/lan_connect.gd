@@ -44,6 +44,8 @@ var _rival_deck := {}
 var _seed := -1
 var _cards: CardTables
 var _name := LineEdit.new()
+var _code := LineEdit.new()
+var _online := false     # modo en linea por rele (room code), frente a LAN local
 var _font := SystemFont.new()
 var _clock := 0.0
 var _clicked := false
@@ -100,6 +102,45 @@ func _setup_name() -> void:
 	_name.text = str(SaveData.data.get("lan", {}).get("name", ""))
 	_name.text_submitted.connect(func(_t: String) -> void: _keys[6] = true)
 	add_child(_name)
+	_online = bool(SaveData.data.get("lan", {}).get("online", false))
+	_setup_code()
+
+
+## Campo del codigo de sala del modo en linea (invitado): sobre la lista de
+## partidas; se dibuja con un recuadro blanco propio como el del nombre.
+func _setup_code() -> void:
+	var empty := StyleBoxEmpty.new()
+	empty.set_content_margin_all(0)
+	for style in ["normal", "focus", "read_only"]:
+		_code.add_theme_stylebox_override(style, empty)
+	_code.add_theme_font_override("font", _font)
+	_code.add_theme_font_size_override("font_size", 18)
+	_code.add_theme_color_override("font_color", Color.BLACK)
+	_code.add_theme_color_override("caret_color", Color.BLACK)
+	_code.add_theme_color_override("font_uneditable_color", Color.BLACK)
+	_code.max_length = 8
+	_code.context_menu_enabled = false
+	_code.virtual_keyboard_type = LineEdit.KEYBOARD_TYPE_DEFAULT
+	_code.position = Vector2(_pos(1).x + _pos(14).x + 6, _pos(14).y + 4)
+	_code.size = Vector2(_size(14).x - 12, 0)
+	_code.text_submitted.connect(func(_t: String) -> void: _keys[6] = true)
+	_code.visible = false
+	add_child(_code)
+
+
+## Alterna LAN local / en linea (rele) en la pantalla del nombre.
+func _toggle_online() -> void:
+	_online = not _online
+	var lan: Dictionary = SaveData.data.get("lan", {})
+	lan["online"] = _online
+	SaveData.data["lan"] = lan
+	SaveData.save()
+
+
+## Linea clicable bajo el nombre que indica el modo de red.
+func _online_rect() -> Rect2:
+	var at := Vector2(_pos(4).x, _pos(4).y + maxf(_pos(5).y, _name.get_combined_minimum_size().y) + 10)
+	return Rect2(at, Vector2(_pos(5).x, 22))
 
 
 func _pos(index: int) -> Vector2i:
@@ -135,7 +176,7 @@ func _unhandled_input(event: InputEvent) -> void:
 func _input(event: InputEvent) -> void:
 	# Con el campo enfocado el LineEdit se queda las teclas: las de mover y salir siguen siendo
 	# del original.
-	if _name.has_focus() and event is InputEventKey and event.pressed and not event.echo:
+	if (_name.has_focus() or _code.has_focus()) and event is InputEventKey and event.pressed and not event.echo:
 		var key := (event as InputEventKey).keycode
 		if key in [KEY_UP, KEY_DOWN, KEY_ESCAPE]:
 			_keys[{KEY_UP: 1, KEY_DOWN: 2, KEY_ESCAPE: 0x14}[key]] = true
@@ -155,6 +196,8 @@ func _process(delta: float) -> void:
 		_cancel = false
 		_keys.clear()
 	_name.editable = _state <= 1
+	_code.editable = _state == 6 and _online
+	_code.visible = _code.editable
 	queue_redraw()
 
 
@@ -223,7 +266,12 @@ func _step() -> void:
 				_name.grab_focus()
 				_clicked = false
 			var on_switch := Rect2(Vector2(_pos(6)), Vector2(_size(6))).has_point(_mouse)
-			if (on_switch and _clicked) or _key(6):
+			if _clicked and _online_rect().has_point(_mouse):
+				_name.release_focus()
+				_toggle_online()
+				_clicked = false
+				_sound("cursor")
+			elif (on_switch and _clicked) or _key(6):
 				var text := _name.text.strip_edges()
 				if text != "":
 					_name.release_focus()
@@ -277,11 +325,21 @@ func _step() -> void:
 				_t = 0
 				_dir = 0
 		5:
-			var err := Lan.browse(_name.text, game) if _choice == 0 else Lan.host(_name.text, game)
+			var err := OK
+			if _online:
+				# Invitado: se une tras teclear el codigo en la lista (estado 6).
+				if _choice == 1:
+					err = Lan.host_online(_name.text, game)
+			elif _choice == 0:
+				err = Lan.browse(_name.text, game)
+			else:
+				err = Lan.host(_name.text, game)
 			if err == OK:
 				_state = 6 if _choice == 0 else 7
 				_t = 0
 				_row = -1
+				if _state == 6 and _online:
+					_code.grab_focus()
 			else:
 				push_warning("LAN: no se pudo %s (%s)" % ["buscar partidas" if _choice == 0 else "crear la partida", error_string(err)])
 				_reverse()
@@ -306,6 +364,21 @@ func _list_step(_mx: int, _my: int) -> void:
 		Lan.close()
 		_reverse()
 		_sound("return")
+		return
+	if _online:
+		# El codigo del anfitrion abre la sesion; un clic fuera del campo lo
+		# reenfoca y Decidir une cuando hay codigo.
+		_code.text = _code.text.to_upper()
+		if _clicked and not Rect2(_code.position, Vector2(_code.size.x, 24)).has_point(_mouse):
+			_code.grab_focus()
+		if _code.text.strip_edges().length() >= 4 and _key(6):
+			_code.release_focus()
+			if Lan.join_online(_code.text) == OK:
+				_state = 7
+				_t = 0
+				_sound("decide")
+			else:
+				_reverse()
 		return
 	_row = -1
 	var at := Vector2(_pos(1).x + _pos(14).x, _pos(14).y + _shutter)
@@ -344,6 +417,10 @@ func _wait_step() -> void:
 				return
 			if Lan.terminated:
 				# La conexion del invitado no llego a establecerse.
+				_reverse()
+				return
+			if _online and Lan.relay_error != "":
+				# El rele rechazo (codigo inexistente, sala llena).
 				_reverse()
 				return
 			if Lan.players() == 2:
@@ -506,13 +583,46 @@ func _draw() -> void:
 		_blit(index, Vector2(shutter_x + _pos(index).x, _pos(index).y + _shutter))
 	if _state > 4:
 		if _choice == 0:
-			_draw_sessions(shutter_x)
+			if _online:
+				_draw_code_entry(shutter_x)
+			else:
+				_draw_sessions(shutter_x)
 		elif _state == 7:
 			_blit(12, Vector2(_pos(12)))
+			if _online:
+				_draw_room_code(shutter_x)
 	if _state == 1:
 		_blit(3, Vector2(_pos(3)))
 	elif _state == 3:
 		_blit(8, Vector2(_pos(8)))
+	if _state <= 1:
+		var r := _online_rect()
+		var mode := "MODE: ONLINE (room code)" if _online else "MODE: LOCAL LAN"
+		draw_string(_font, r.position + Vector2(0, 17), mode, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color(0.9, 0.9, 0.95))
+		if _online and Lan.relay_url() == "":
+			draw_string(_font, r.position + Vector2(0, 37), "set online.relay in system.json", HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color(1, 0.6, 0.4))
+
+
+## Invitado en linea: campo del codigo de sala donde iria la lista de partidas.
+func _draw_code_entry(shutter_x: int) -> void:
+	var at := Vector2(shutter_x + _pos(14).x, _pos(14).y + _shutter)
+	var row := _size(14)
+	draw_string(_font, Vector2(at.x, at.y - 8), "ROOM CODE:", HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color.WHITE)
+	draw_rect(Rect2(at, Vector2(row.x, 26)), Color(0.95, 0.95, 0.97))
+	_code.position = Vector2(at.x + 6, at.y + 3)
+	_code.size = Vector2(row.x - 12, 0)
+	if Lan.relay_error != "":
+		draw_string(_font, Vector2(at.x, at.y + 46), Lan.relay_error, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color(1, 0.5, 0.4))
+
+
+## Anfitrion en linea: el codigo que compartir, bajo el cartel de espera.
+func _draw_room_code(shutter_x: int) -> void:
+	var at := Vector2(shutter_x + _pos(14).x, _pos(14).y + _shutter)
+	var code := Lan.room_code()
+	var text := "ROOM CODE:  %s" % (code if code != "" else "connecting...")
+	draw_string(_font, Vector2(at.x, at.y + 10), text, HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color.WHITE)
+	if Lan.relay_error != "":
+		draw_string(_font, Vector2(at.x, at.y + 40), Lan.relay_error, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color(1, 0.5, 0.4))
 
 
 func _draw_sessions(shutter_x: int) -> void:
