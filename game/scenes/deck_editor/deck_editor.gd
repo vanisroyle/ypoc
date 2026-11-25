@@ -341,9 +341,9 @@ func _load_deck() -> void:
 		_deck[zone] = ids
 		_deck_criteria[zone] = "default"
 	if _swap and not _duel_legal(_deck):
-		# El duelo cae al mazo inicial cuando el guardado no es valido (principal fuera
-		# de 40..80, side o fusion de mas de 15): editar el invalido en el intercambio
-		# haria que los cambios se ignoraran en el siguiente duelo. Se parte del inicial.
+		# El duelo cae al mazo inicial cuando el principal del guardado no esta en
+		# 40..80: editar el invalido en el intercambio haria que los cambios se
+		# ignoraran en el siguiente duelo. Se parte del inicial.
 		var starter: Variant = Assets.read_json("%s/file/starter_deck.json" % game)
 		if starter is Dictionary:
 			for zone in ["main", "side", "fusion"]:
@@ -360,8 +360,10 @@ func _load_deck() -> void:
 
 
 static func _duel_legal(deck: Dictionary) -> bool:
+	# Misma regla que el duelo (normal_duel.gd): solo el tamano del principal decide
+	# si se usa el mazo guardado o el inicial. Side y fusion no influyen en esa caida.
 	var main: int = deck["main"].size()
-	return main >= 40 and main <= 80 and deck["side"].size() <= 15 and deck["fusion"].size() <= 15
+	return main >= 40 and main <= 80
 
 
 func _build_trunk() -> void:
