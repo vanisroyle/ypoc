@@ -338,6 +338,21 @@ func _load_deck() -> void:
 			ids.append(int(id))
 		_deck[zone] = ids
 		_deck_criteria[zone] = "default"
+	if _swap and not _duel_legal(_deck):
+		# El duelo cae al mazo inicial cuando el guardado no es valido (principal fuera
+		# de 40..80, side o fusion de mas de 15): editar el invalido en el intercambio
+		# haria que los cambios se ignoraran en el siguiente duelo. Se parte del inicial.
+		var starter: Variant = Assets.read_json("%s/file/starter_deck.json" % game)
+		if starter is Dictionary:
+			for zone in ["main", "side", "fusion"]:
+				_deck[zone] = []
+				for id in starter.get(zone, []):
+					_deck[zone].append(int(id))
+
+
+static func _duel_legal(deck: Dictionary) -> bool:
+	var main: int = deck["main"].size()
+	return main >= 40 and main <= 80 and deck["side"].size() <= 15 and deck["fusion"].size() <= 15
 	if not _swap:
 		# 458610 ->436e80: Deck.ydc activo tambien figura en el catalogo publico.
 		Ydc.save(_decks_dir().path_join("Deck.ydc"), _deck, SaveData.deck_file_header())
