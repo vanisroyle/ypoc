@@ -1352,7 +1352,9 @@ func _leave() -> void:
 		# machacaria un guardado invalido sin que el jugador moviera una carta.
 		if _deck != _swap_start:
 			SaveData.set_deck(game, _deck.duplicate(true))
-			SaveData.save()
+		# Guardar siempre la partida (el duelo jugado deja estadisticas en memoria);
+		# lo que se omite sin cambios es machacar el mazo con la ordenacion de la vista.
+		SaveData.save()
 		Audio.play_sfx("%s/voice/internal/decide.wav" % game)   # 0x10000001
 		Game.after_swap(game)
 		return
