@@ -195,6 +195,7 @@ var _modal: Node = null
 var _new_rows := {}                 # 44f920/447ed0/44ea60: estado NEW por fila
 var _dirty := false
 var _swap := false
+var _match := false
 var _swap_initial_main := 0
 var _swap_transition := preload("res://scenes/deck_editor/swap_arrow_transition.gd").new()
 var _swap_surface_cache := {}
@@ -268,6 +269,7 @@ func _init(game_id: String, mode := "edit") -> void:
 	game = game_id
 	_swap_transition.variant = game_id
 	_swap = mode == "swap"
+	_match = mode == "match"
 	_dir = "%s/deck_c/" % game
 
 
@@ -1334,12 +1336,15 @@ func _leave() -> void:
 	if not _deck_valid(_deck):
 		_message("deckerror", "dlg_ok_ok_derr")
 		return
-	if _dirty:
+	if _dirty or _match:
 		SaveData.set_deck(game, _deck.duplicate(true))
 	_save_settings()
 	SaveData.save()
 	Audio.play_sfx("%s/voice/internal/return.wav" % game)
-	Game.return_home(game, "deck")
+	if _match:
+		Game.after_swap(game)
+	else:
+		Game.return_home(game, "deck")
 
 
 func _set_filter(filter: String) -> void:

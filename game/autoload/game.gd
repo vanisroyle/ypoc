@@ -436,7 +436,11 @@ func record_duel_result(result: int) -> void:
 ## Side, deck_editor.gd con "swap").
 func continue_match(game: String) -> void:
 	current_game = game
-	goto(load("res://scenes/deck_editor/deck_editor.gd").new(_duel_deck(game), "swap"))
+	# En el juego combinado, el editor completo con la bolsa entre duelos del match: el
+	# jugador puede cambiar de estrategia (no solo intercambiar con el side). Los juegos
+	# sueltos conservan el intercambio original solo-side.
+	var mode := "match" if combined and Paths.has_game("joey") else "swap"
+	goto(load("res://scenes/deck_editor/deck_editor.gd").new(_duel_deck(game), mode))
 
 
 ## Mazo que usa el duelo: en el juego combinado es siempre el de Joey (pool unido);
