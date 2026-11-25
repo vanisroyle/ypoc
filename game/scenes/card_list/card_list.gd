@@ -93,6 +93,7 @@ var _detail_reveal := preload("res://core/card_detail_reveal.gd").new()
 var _stats := Label.new()
 var _text_clip := Control.new()
 var _scroll: NativeScrollBar
+var _measure_frames := 0
 var _text_rect := Rect2i()           # +0x160..+0x16c del panel
 var _text_top_padding := 0
 var _cursor = preload("res://scenes/duel/duel_cursor_visual.gd").new()
@@ -489,6 +490,12 @@ static func _is_monster(card: Dictionary) -> bool:
 func _update_detail() -> void:
 	if _key(0xf): _scroll.set_value(_scroll.value - SCROLL_STEP)
 	elif _key(0x10): _scroll.set_value(_scroll.value + SCROLL_STEP)
+	# La altura del texto no existe hasta uno o dos fotogramas despues de asignarlo;
+	# medirla al cambiar de carta dejaba el rango siempre en cero y la rueda no hacia nada.
+	if _measure_frames > 0:
+		_measure_frames -= 1
+		if _measure_frames == 0:
+			_scroll.set_range(maxi(0, int(_text.get_content_height()) + TEXT_EXTRA[game] - _text_top_padding - int(_text_clip.size.y)))
 	if _detail_card == _shown_card:
 		return
 	_shown_card = _detail_card
@@ -508,7 +515,8 @@ func _update_detail() -> void:
 	_text_clip.size.y = _text_rect.size.y - _text_top_padding - (1 + STATS_HEIGHT[game] if _is_monster(card) else 0)
 	_scroll.set_value(0)
 	# El margen de la mascara ya esta descontado del area visible, una sola vez.
-	_scroll.set_range(maxi(0, int(_text.get_content_height()) + TEXT_EXTRA[game] - _text_top_padding - int(_text_clip.size.y)))
+	_scroll.set_range(0)
+	_measure_frames = 2
 
 
 static func _bb(text: String) -> String:
