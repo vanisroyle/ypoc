@@ -195,6 +195,8 @@ var _modal: Node = null
 var _new_rows := {}                 # 44f920/447ed0/44ea60: estado NEW por fila
 var _dirty := false
 var _swap := false
+var _swap_replaced := false
+var _swap_start := {}
 var _swap_initial_main := 0
 var _swap_transition := preload("res://scenes/deck_editor/swap_arrow_transition.gd").new()
 var _swap_surface_cache := {}
@@ -348,15 +350,18 @@ func _load_deck() -> void:
 				_deck[zone] = []
 				for id in starter.get(zone, []):
 					_deck[zone].append(int(id))
+			_swap_replaced = true
+	if not _swap:
+		# 458610 ->436e80: Deck.ydc activo tambien figura en el catalogo publico.
+		Ydc.save(_decks_dir().path_join("Deck.ydc"), _deck, SaveData.deck_file_header())
+	_sort_deck()
+	for zone in ["main", "side", "fusion"]:
+		_swap_start[zone] = _deck[zone].duplicate()
 
 
 static func _duel_legal(deck: Dictionary) -> bool:
 	var main: int = deck["main"].size()
 	return main >= 40 and main <= 80 and deck["side"].size() <= 15 and deck["fusion"].size() <= 15
-	if not _swap:
-		# 458610 ->436e80: Deck.ydc activo tambien figura en el catalogo publico.
-		Ydc.save(_decks_dir().path_join("Deck.ydc"), _deck, SaveData.deck_file_header())
-	_sort_deck()
 
 
 func _build_trunk() -> void:
@@ -1341,8 +1346,11 @@ func _leave() -> void:
 		if not _swap_valid():
 			_message("swapdeckerror", "dlg_text_ok")
 			return
-		SaveData.set_deck(game, _deck.duplicate(true))
-		SaveData.save()
+		# Si el guardado era invalido y se partio del mazo inicial, no machacarlo
+		# cuando el jugador no movio nada: el duelo ya cae al inicial por si mismo.
+		if not (_swap_replaced and _deck == _swap_start):
+			SaveData.set_deck(game, _deck.duplicate(true))
+			SaveData.save()
 		Audio.play_sfx("%s/voice/internal/decide.wav" % game)   # 0x10000001
 		Game.after_swap(game)
 		return
