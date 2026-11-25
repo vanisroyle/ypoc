@@ -195,7 +195,6 @@ var _modal: Node = null
 var _new_rows := {}                 # 44f920/447ed0/44ea60: estado NEW por fila
 var _dirty := false
 var _swap := false
-var _swap_replaced := false
 var _swap_start := {}
 var _swap_initial_main := 0
 var _swap_transition := preload("res://scenes/deck_editor/swap_arrow_transition.gd").new()
@@ -350,7 +349,6 @@ func _load_deck() -> void:
 				_deck[zone] = []
 				for id in starter.get(zone, []):
 					_deck[zone].append(int(id))
-			_swap_replaced = true
 	if not _swap:
 		# 458610 ->436e80: Deck.ydc activo tambien figura en el catalogo publico.
 		Ydc.save(_decks_dir().path_join("Deck.ydc"), _deck, SaveData.deck_file_header())
@@ -1348,9 +1346,11 @@ func _leave() -> void:
 		if not _swap_valid():
 			_message("swapdeckerror", "dlg_text_ok")
 			return
-		# Si el guardado era invalido y se partio del mazo inicial, no machacarlo
-		# cuando el jugador no movio nada: el duelo ya cae al inicial por si mismo.
-		if not (_swap_replaced and _deck == _swap_start):
+		# Sin cambios no se guarda nada: la ordenacion de la vista alteraria zonas
+		# que el jugador no toco (una fusion de mas de 15 reordenada cambia que
+		# cartas entran en el corte de 15 del duelo) y el repuesto del mazo inicial
+		# machacaria un guardado invalido sin que el jugador moviera una carta.
+		if _deck != _swap_start:
 			SaveData.set_deck(game, _deck.duplicate(true))
 			SaveData.save()
 		Audio.play_sfx("%s/voice/internal/decide.wav" % game)   # 0x10000001
