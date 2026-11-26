@@ -613,8 +613,16 @@ func _ready() -> void:
 		kind = "tutorial"
 	if kind.begins_with("file:"):
 		# Repeticion guardada elegida en la lista de carga (0x4587d0(3)).
-		_files.append(kind.substr(5))
+		var file := kind.substr(5)
+		_files.append(file)
 		kind = "replay"
+		# El tema (el rival) viaja en un json junto al .ydr: en el juego combinado la
+		# grabacion se archiva bajo el motor (joey) y sin el saldria el arte de Joey.
+		var sidecar := file.get_basename() + ".json"
+		if FileAccess.file_exists(sidecar):
+			var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(sidecar))
+			if parsed is Dictionary and str(parsed.get("theme", "")) in ["yugi", "kaiba", "joey"]:
+				theme = str(parsed["theme"])
 	for g in ([] if kind == "replay" or _lesson > 0 else [game]):
 		var dir := Paths.data_dir.path_join(g).path_join("file")
 		var names := Array(DirAccess.get_files_at(dir)).filter(
