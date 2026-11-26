@@ -26,7 +26,10 @@ static func normalize(event: Dictionary, duel: Duel) -> Dictionary:
 		d["flags"] = flags
 		d["angle"] = ((flags & 1) + p * 2) * 128
 		d["center"] = Geometry.zone(p, z, str(d.get("theme", d.get("game", ""))))
-		d["hide"] = [d["center"]]
+		# Joey 44f630/44f9f0: el efecto no redibuja la carta durante el arco iris (ni el
+		# set en ninguna fase) — la carta base la sigue dando la mesa. Ocultarla dejaba
+		# un hueco translucido entre el aterrizaje y el final del efecto.
+		d["hide"] = [] if d.get("game", "") == "joey" else [d["center"]]
 		if mode == "set":
 			var points: Array[Vector2] = []
 			for index in 8:
@@ -35,7 +38,6 @@ static func normalize(event: Dictionary, duel: Duel) -> Dictionary:
 					(Math.cos_fx(index * 64 - 128) * radius) >> 16))
 			d["set_points"] = points
 			d["face"] = bool(flags & 2)
-			d["hide"] = [d["center"]]
 	elif mode == "special":
 		# 44fcc0 (Joey) sitúa su efecto en cualquier zona del campo con 45c140; los efectos de
 		# Yugi/Kaiba que comparten este modo solo invocan en zonas de monstruo.
