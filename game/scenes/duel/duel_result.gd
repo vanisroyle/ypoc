@@ -214,6 +214,17 @@ static func replays_dir(game_id: String) -> String:
 	return Paths.save_dir.path_join("replays").path_join(game_id)
 
 
+## El formato .ydr no tiene campo para el rival: en el juego combinado la grabacion se
+## archiva bajo el motor (joey) y el tema se guarda en un json junto al archivo.
+static func replay_theme(game_id: String, name: String) -> String:
+	var sidecar := replays_dir(game_id).path_join(name + ".json")
+	if FileAccess.file_exists(sidecar):
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(sidecar))
+		if parsed is Dictionary and str(parsed.get("theme", "")) in ["yugi", "kaiba", "joey"]:
+			return str(parsed["theme"])
+	return game_id
+
+
 static func replay_files(game_id: String) -> PackedStringArray:
 	var out := PackedStringArray()
 	var dir := replays_dir(game_id)
@@ -258,6 +269,12 @@ func _write_replay(name: String, confirmed := false) -> void:
 		return
 	var duel := get_parent()
 	if duel != null and duel.has_method("make_replay") and duel.make_replay().save(path):
+		# `game` aqui es el tema (el rival), no el motor: el visor lo necesita para
+		# reproducir con el arte correcto y la lista para etiquetar la grabacion.
+		var f := FileAccess.open(path.get_basename() + ".json", FileAccess.WRITE)
+		if f != null:
+			f.store_string(JSON.stringify({"theme": game}))
+			f.close()
 		_after_replay()
 	else:
 		Audio.play_sfx("%s/voice/internal/unable.wav" % game)

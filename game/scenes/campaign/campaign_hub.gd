@@ -341,7 +341,7 @@ func _open_replays() -> void:
 			continue
 		for name in DuelResult.replay_files(game):
 			var b := Button.new()
-			b.text = "%s · %s" % [rival_name(game), name]
+			b.text = "%s · %s" % [rival_name(DuelResult.replay_theme(game, name)), name]
 			b.alignment = HORIZONTAL_ALIGNMENT_LEFT
 			b.add_theme_color_override("font_color", GOLD_LIGHT)
 			b.pressed.connect(func() -> void:
