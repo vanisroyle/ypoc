@@ -449,7 +449,9 @@ func _duel_deck(game: String) -> String:
 ## escena 7 (piedra-papel-tijera, que en match elige el perdedor).
 func after_swap(game: String) -> void:
 	match_duel += 1
-	open_janken(game)
+	# El `game` del editor es el mazo (en el juego combinado siempre joey); el rival
+	# del match es current_game. Pasar el del editor convertia los duelos 2 y 3 en joey.
+	open_janken(current_game)
 
 
 ## 0x437c60: mazo de Yugi (data/Y/file/cpu<sufijo>.ydc) segun el porcentaje de cartas que se
