@@ -252,6 +252,17 @@ func _db(rel_path: String) -> float:
 
 func _load(path: String) -> AudioStream:
 	if not _cache.has(path):
+		if path.begins_with("res://") and not FileAccess.file_exists(path):
+			# Recurso importado dentro del pck; los packs web guardan ficheros en
+			# bruto y entran por el camino normal de FileAccess.
+			var packed: AudioStream = load(path)
+			if packed != null:
+				if packed is AudioStreamOggVorbis:
+					packed.loop = false
+				elif packed is AudioStreamWAV:
+					packed.loop_mode = AudioStreamWAV.LOOP_DISABLED
+			_cache[path] = packed
+			return packed
 		if path.get_extension().to_lower() == "ogg":
 			var ogg := AudioStreamOggVorbis.load_from_file(path)
 			if ogg != null:

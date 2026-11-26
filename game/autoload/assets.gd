@@ -1,7 +1,7 @@
 extends Node
 ## Acceso a data/ (fuera de res://, porque los assets de Konami no van en el proyecto).
 ## - Busqueda sin distinguir mayusculas: los scripts dicen "TITLE1.bmp" y el archivo es
-##   "title1.png"; en Android el sistema de archivos si distingue.
+##   "title1.png"; conviene conservar los nombres exactos.
 ## - ".bmp"/".yga" se resuelven al ".png" convertido.
 ## - "?" es la letra de idioma; si el recurso no existe en ese idioma se usa el ingles.
 
@@ -41,10 +41,38 @@ func reindex() -> void:
 	_missing.clear()
 	if DirAccess.dir_exists_absolute(Paths.data_dir):
 		_scan(Paths.data_dir, "")
+	_load_voice_packs()
+
+
+func _load_voice_packs() -> void:
 	_voice_packs.clear()
 	var voices: Variant = read_json("voice_manifest.json")
 	if voices is Dictionary:
 		_voice_packs = voices.get("games", {})
+
+
+const INDEX_CACHE_PATH := "user://asset_index.bin"
+
+
+## Variante web: los packs son inmutables entre arranques, asi que el indice se
+## guarda en user:// y se reutiliza mientras no cambie el manifiesto (cache_key).
+## Reindexar 9k archivos a traves de 17 packs montados tarda segundos en movil.
+func reindex_cached(cache_key: String) -> void:
+	if FileAccess.file_exists(INDEX_CACHE_PATH):
+		var f := FileAccess.open(INDEX_CACHE_PATH, FileAccess.READ)
+		var saved: Variant = f.get_var() if f != null else null
+		if saved is Dictionary and saved.get("key") == cache_key and saved.get("index") is Dictionary:
+			_index.clear()
+			_textures.clear()
+			_layouts.clear()
+			_missing.clear()
+			_index = saved["index"]
+			_load_voice_packs()
+			return
+	reindex()
+	var f := FileAccess.open(INDEX_CACHE_PATH, FileAccess.WRITE)
+	if f != null:
+		f.store_var({"key": cache_key, "index": _index})
 
 
 func voice_language(game: String) -> String:
@@ -141,14 +169,22 @@ func texture(rel_path: String) -> Texture2D:
 			push_warning("Recurso no encontrado: %s" % rel_path)
 		return null
 	if not _textures.has(path):
-		var image := Image.load_from_file(path)
-		if image == null:
+		var tex: Texture2D
+		if FileAccess.file_exists(path):
+			# Fichero en bruto: data/ suelta o packs web (PCKPacker guarda los originales).
+			var image := Image.load_from_file(path)
+			if image != null:
+				# Equivale a la opcion de importacion fix_alpha_border: evita que el color
+				# clave que queda bajo los pixeles transparentes "sangre" al escalar.
+				image.fix_alpha_edges()
+				tex = ImageTexture.create_from_image(image)
+		elif path.begins_with("res://"):
+			# Recurso importado dentro del pck: FileAccess solo veria el .ctex remapeado.
+			tex = load(path)
+		if tex == null:
 			push_error("No se pudo cargar %s" % path)
 			return null
-		# Equivale a la opcion de importacion fix_alpha_border: evita que el color clave que
-		# queda bajo los pixeles transparentes "sangre" al escalar con filtrado.
-		image.fix_alpha_edges()
-		_textures[path] = ImageTexture.create_from_image(image)
+		_textures[path] = tex
 	return _textures[path]
 
 
@@ -182,5 +218,11 @@ func _scan(abs_dir: String, rel_dir: String) -> void:
 		if dir.current_is_dir():
 			_scan(abs_path, rel)
 		else:
+			# En el pck exportado los recursos importados figuran como "*.import";
+			# el indice usa el nombre original, que load() resuelve por el remap.
+			if name.ends_with(".import"):
+				name = name.trim_suffix(".import")
+				abs_path = abs_path.trim_suffix(".import")
+				rel = rel.trim_suffix(".import")
 			_index[rel.to_lower()] = abs_path
 		name = dir.get_next()

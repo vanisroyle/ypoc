@@ -9,21 +9,21 @@ import shutil
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
-TOP = {"docs/ANDROID_UPDATES.md", "docs/PRIVACY.md","RELEASE_NOTES.md", "README.md", "README.es.md", "Jugar demo.bat", "THIRD_PARTY_NOTICES.md", ".gitattributes", "docs/LAUNCHER_SETTINGS.md", "docs/REDDIT_POST.en.md", "docs/CARD_TRANSLATIONS.md", "game/translations/spanish-card-catalog.json"}
-TOOL_TOP = {"tools/pyproject.toml", "tools/prepare_public.py", "tools/build_windows.py", "tools/importer_entry.py", "tools/trace_logo_contours.py",
+TOP = {"docs/PRIVACY.md","RELEASE_NOTES.md", "README.md", "THIRD_PARTY_NOTICES.md", ".gitattributes", "docs/LAUNCHER_SETTINGS.md", "docs/CARD_TRANSLATIONS.md", "game/translations/spanish-card-catalog.json"}
+TOOL_TOP = {"tools/pyproject.toml", "tools/prepare_public.py", "tools/build_windows.py", "tools/build_handheld.sh", "tools/build_web.sh", "tools/importer_entry.py", "tools/trace_logo_contours.py",
+            "tools/online/relay_server.py", "tools/online/requirements.txt", "tools/online/Dockerfile", "tools/online/README.md",
+            "tools/online/worker/worker.js", "tools/online/worker/wrangler.toml",
+            "tools/online/worker/.gitignore",
+            "tools/online/go/relay.go", "tools/online/go/go.mod", "tools/online/go/go.sum", "tools/online/go/Dockerfile",
+            "tools/gen_ai_decks.py",
             "tools/tests/test_public_import.py", "tools/tests/test_media_import.py",
-            "tools/tests/test_compact_import.py", "tools/configure_android_builder.py", "tools/tests/test_android_builder.py", "tools/tests/test_android_toolchain.py", "tools/tests/test_updater.py", "tools/tests/test_card_translations.py", "tools/tests/test_reviewed_card_pack.py",
-            "tools/prepare_android_public.py", "tools/public_android/README.md", "tools/public_android/README.es.md",
-            ".github/workflows/build-windows.yml", "game/export_presets.cfg",
-            # CI builds the APK from the Android snapshot of this same tree (build_android.py).
-            "tools/build_android.py", "tools/android/build_apk.py", "tools/android/pack_data.gd",
-            "game/tests/android_bundle_test.gd", "game/tests/android_engine_bundle_test.gd",
-            "game/assets/icons/launcher-adaptive-foreground.svg", "game/assets/icons/launcher-adaptive-background.svg",
-            "game/assets/icons/launcher-adaptive-monochrome.svg"}
+            "tools/tests/test_compact_import.py", "tools/tests/test_updater.py", "tools/tests/test_card_translations.py", "tools/tests/test_reviewed_card_pack.py",
+            ".github/workflows/build-windows.yml", "game/export_presets.cfg"}
 OWN_ASSETS = {"game/assets/music/launcher_theme.mp3",
               "game/assets/backgrounds/yugi_duel.jpg",
               "game/assets/backgrounds/joey_duel.png",
-              "game/assets/backgrounds/kaiba_duel.png"}
+              "game/assets/backgrounds/kaiba_duel.png",
+              "game/assets/menu/hub_bg.png"}
 LAUNCHER_ART = {"game/assets/icons/launcher.svg", "game/assets/icons/launcher.ico"}
 README_SCREENSHOTS = {"docs/images/launcher-library-en.png", "docs/images/launcher-import-en.png"}
 
@@ -34,10 +34,14 @@ def allowed(relative: Path) -> bool:
         return True
     if path == "game/share_smoke.gd":
         return False
+    if path.startswith("game/ai_decks/"):
+        return relative.suffix == ".json"
     if path.startswith("game/"):
         if any(part in {".godot", "assets", "tests", "artifacts", "temp", "scenarios"} for part in relative.parts):
             return False
         return relative.suffix in {".gd", ".tscn", ".godot", ".gdshader", ".gdshaderinc"}
+    if path.startswith("tools/selfplay/"):
+        return relative.suffix in {".py", ".bat"}
     if path.startswith("tools/pocx/") and len(relative.parts) == 3:
         return relative.suffix == ".py" or relative.name == "color_key_overrides.json"
     return False
@@ -62,7 +66,7 @@ def prepare(output: Path) -> dict:
         relative = source.relative_to(ROOT)
         dest = output / relative
         dest.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(source, dest)
+        shutil.copy2(source, dest)
         if relative.as_posix() not in OWN_ASSETS | LAUNCHER_ART | README_SCREENSHOTS:
             dest.write_bytes(dest.read_bytes().replace(b"\r\n", b"\n"))
         manifest[relative.as_posix()] = hashlib.sha256(dest.read_bytes()).hexdigest()
@@ -70,7 +74,7 @@ def prepare(output: Path) -> dict:
               "data/\nextracted/\nsamples/\nsaves/\nimports/\nartifacts/\nre/\n"
               ".godot/\n__pycache__/\n*.pyc\n*.uid\n*.iso\n*.exe\n*.dat\n*.bin\n"
               "*.pck\n*.apk\n*.keystore\n*.jks\n.env*\n.venv/\n*.egg-info/\n"
-              "build/\ndist/\ncontent.cfg\nPoC Data/\nandroid-builder.json\n*.import\n")
+              "build/\ndist/\ncontent.cfg\nPoC Data/\n*.import\n")
     (output / ".gitignore").write_text(ignore, encoding="utf-8", newline="\n")
     manifest[".gitignore"] = hashlib.sha256((output / ".gitignore").read_bytes()).hexdigest()
     (output / ".gitattributes").write_bytes(b"* text=auto eol=lf\n")

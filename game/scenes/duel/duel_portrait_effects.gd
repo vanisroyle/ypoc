@@ -56,9 +56,12 @@ static func normalize(event: Dictionary, duel: Duel) -> Dictionary:
 	var p: int = int(d.get("p", 0)) & 1
 	if LauncherSettings.fast_play and kind in ["reaction_destroy", "reaction_flip", "reaction_lp", "reaction_card", "reaction_activation", "cmd"]:
 		return {}
-	if str(d.get("game", "yugi")) == "kaiba" and kind in ["reaction_destroy", "reaction_flip", "reaction_card", "reaction_lp", "cmd"]:
+	# Las reacciones se enrutan por el tema (el rival), no por el motor: en el juego
+	# combinado el motor es siempre joey y el arte del rival nunca aparecia.
+	var theme: String = str(d.get("theme", d.get("game", "yugi")))
+	if theme == "kaiba" and kind in ["reaction_destroy", "reaction_flip", "reaction_card", "reaction_lp", "cmd"]:
 		return _kaiba(d, duel)
-	if str(d.get("game", "yugi")) == "joey" and kind in ["reaction_activation", "reaction_destroy", "reaction_flip", "reaction_card", "reaction_lp", "cmd"]:
+	if theme == "joey" and kind in ["reaction_activation", "reaction_destroy", "reaction_flip", "reaction_card", "reaction_lp", "cmd"]:
 		return _joey(d, duel)
 	var layout := ""
 	var voice := ""
@@ -186,7 +189,7 @@ static func _portrait(d: Dictionary, layout: String, voice: String) -> Dictionar
 	d["wait_voice"] = true
 	d["layout"] = layout
 	d["center"] = Vector2(525, 300)
-	var portrait_game: String = str(d.get("game", "yugi"))
+	var portrait_game: String = str(d.get("theme", d.get("game", "yugi")))
 	if not Assets.exists("%s/bust_up/%s.layout.json" % [portrait_game, layout]): return {}
 	d["portrait_game"] = portrait_game
 	d["sound"] = "%s/voice/internal/%s.wav" % [portrait_game, voice]

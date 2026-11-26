@@ -27,7 +27,7 @@ static var _mouse_owners := 0
 static var _original_mouse_mode := Input.MOUSE_MODE_VISIBLE
 var _owns_mouse := false
 var hide_system_mouse := true
-var show_pointer := not OS.has_feature("mobile")
+var show_pointer := true
 var _waves_only := false
 
 func _init(waves_only := false) -> void:

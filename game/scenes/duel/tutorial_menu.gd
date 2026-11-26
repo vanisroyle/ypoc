@@ -83,7 +83,7 @@ func _activate() -> void:
 	if selected < 0 or ticks <= 15 or _overlay.busy(): return
 	Audio.stop_music()
 	if selected == 4:
-		Game.open_title("yugi", "tutorial")
+		Game.return_home("yugi", "tutorial")
 	else:
 		Game.open_duel_replay("yugi", "lesson:%d" % (selected + 1))
 

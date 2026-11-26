@@ -29,7 +29,6 @@ static func apply(dialog: AcceptDialog, danger := false) -> void:
 static func theme() -> Theme:
 	if _theme != null:
 		return _theme
-	var mobile := OS.has_feature("mobile") or Paths.cmdline_value("mobile-controls") == "true"
 	_theme = Theme.new()
 	_theme.default_font_size = 17
 	# Marco de la ventana incrustada: el margen superior deja sitio a la barra de titulo.
@@ -69,7 +68,7 @@ static func theme() -> Theme:
 	_theme.set_stylebox("panel", "AcceptDialog", panel)
 	_theme.set_constant("buttons_separation", "AcceptDialog", 16)
 	_theme.set_constant("buttons_min_width", "AcceptDialog", 128)
-	_theme.set_constant("buttons_min_height", "AcceptDialog", 48 if mobile else 38)
+	_theme.set_constant("buttons_min_height", "AcceptDialog", 38)
 	_theme.set_color("font_color", "Label", GOLD_LIGHT)
 	_theme.set_color("font_outline_color", "Label", Color(0, 0, 0, 0.7))
 	_theme.set_constant("outline_size", "Label", 3)

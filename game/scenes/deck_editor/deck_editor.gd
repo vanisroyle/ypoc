@@ -195,6 +195,7 @@ var _modal: Node = null
 var _new_rows := {}                 # 44f920/447ed0/44ea60: estado NEW por fila
 var _dirty := false
 var _swap := false
+var _swap_start := {}
 var _swap_initial_main := 0
 var _swap_transition := preload("res://scenes/deck_editor/swap_arrow_transition.gd").new()
 var _swap_surface_cache := {}
@@ -338,10 +339,29 @@ func _load_deck() -> void:
 			ids.append(int(id))
 		_deck[zone] = ids
 		_deck_criteria[zone] = "default"
+	if _swap and not _duel_legal(_deck):
+		# El duelo cae al mazo inicial cuando el principal del guardado no esta en
+		# 40..80: editar el invalido en el intercambio haria que los cambios se
+		# ignoraran en el siguiente duelo. Se parte del inicial.
+		var starter: Variant = Assets.read_json("%s/file/starter_deck.json" % game)
+		if starter is Dictionary:
+			for zone in ["main", "side", "fusion"]:
+				_deck[zone] = []
+				for id in starter.get(zone, []):
+					_deck[zone].append(int(id))
 	if not _swap:
 		# 458610 ->436e80: Deck.ydc activo tambien figura en el catalogo publico.
 		Ydc.save(_decks_dir().path_join("Deck.ydc"), _deck, SaveData.deck_file_header())
 	_sort_deck()
+	for zone in ["main", "side", "fusion"]:
+		_swap_start[zone] = _deck[zone].duplicate()
+
+
+static func _duel_legal(deck: Dictionary) -> bool:
+	# Misma regla que el duelo (normal_duel.gd): solo el tamano del principal decide
+	# si se usa el mazo guardado o el inicial. Side y fusion no influyen en esa caida.
+	var main: int = deck["main"].size()
+	return main >= 40 and main <= 80
 
 
 func _build_trunk() -> void:
@@ -1326,7 +1346,14 @@ func _leave() -> void:
 		if not _swap_valid():
 			_message("swapdeckerror", "dlg_text_ok")
 			return
-		SaveData.set_deck(game, _deck.duplicate(true))
+		# Sin cambios no se guarda nada: la ordenacion de la vista alteraria zonas
+		# que el jugador no toco (una fusion de mas de 15 reordenada cambia que
+		# cartas entran en el corte de 15 del duelo) y el repuesto del mazo inicial
+		# machacaria un guardado invalido sin que el jugador moviera una carta.
+		if _deck != _swap_start:
+			SaveData.set_deck(game, _deck.duplicate(true))
+		# Guardar siempre la partida (el duelo jugado deja estadisticas en memoria);
+		# lo que se omite sin cambios es machacar el mazo con la ordenacion de la vista.
 		SaveData.save()
 		Audio.play_sfx("%s/voice/internal/decide.wav" % game)   # 0x10000001
 		Game.after_swap(game)
@@ -1339,7 +1366,7 @@ func _leave() -> void:
 	_save_settings()
 	SaveData.save()
 	Audio.play_sfx("%s/voice/internal/return.wav" % game)
-	Game.open_title(game, "deck")
+	Game.return_home(game, "deck")
 
 
 func _set_filter(filter: String) -> void:

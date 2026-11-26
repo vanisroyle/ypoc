@@ -88,14 +88,19 @@ func _ready() -> void:
 			return
 		decks.append({"main": PackedInt32Array(original.get("main", [])), "side": PackedInt32Array(original.get("side", [])), "fusion": PackedInt32Array(original.get("fusion", []))})
 	# Mazo de Yugi elegido por 0x437c60 al entrar desde el menu (cpu*.ydc convertido a json).
-	var rival: Variant = Assets.read_json(Game.rival_deck) if Game.rival_deck != "" and Paths.cmdline_value("scenario") == "" else null
+	var rival: Variant = Game.rival_deck if Game.rival_deck is Dictionary else \
+			(Assets.read_json(Game.rival_deck) if Game.rival_deck != "" else null)
+	if Paths.cmdline_value("scenario") != "":
+		rival = null
+	var rival_name: String = Game.rival_deck.get_file() if Game.rival_deck is String else \
+			(str(rival.get("_name")) if rival is Dictionary and rival.get("_name", "") != "" else "ai_decks")
 	if rival is Dictionary:
 		decks[1] = {"main": PackedInt32Array(rival.get("main", [])), "side": PackedInt32Array(rival.get("side", [])),
 				"fusion": PackedInt32Array(rival.get("fusion", []))}
 	var active: Dictionary = SaveData.data.get("decks", {}).get(game, {})
 	if active.get("main", []).size() >= 40 and active.get("main", []).size() <= 80:
 		decks[0] = {"main": PackedInt32Array(active.get("main", [])), "side": PackedInt32Array(active.get("side", [])), "fusion": PackedInt32Array(active.get("fusion", []))}
-		_source = "Tu mazo activo · rival: " + (Game.rival_deck.get_file() if rival is Dictionary else "mazo original")
+		_source = "Tu mazo activo · rival: " + (rival_name if rival is Dictionary else "mazo original")
 	else:
 		_source = "Mazos originales (sin mazo activo válido)"
 	decks = _prepare_duel_decks(decks)
@@ -136,7 +141,7 @@ func _ready() -> void:
 			scenario = null
 		_duel.start_network(decks, first, rand_seed, Lan)
 		_wait_label = DuelWaitLabel.new()
-		_wait_label.setup(game)
+		_wait_label.setup(theme)
 		add_child(_wait_label)
 	else:
 		_duel.start_normal(decks, first, rand_seed)
@@ -148,14 +153,14 @@ func _ready() -> void:
 			printerr("Escenario: ", warning)
 	_ph_p = _duel.options & 1
 	# Hoja con la que se comprueba el raton: pha_s_dr en Yugi, ph_b_dr (indice 0) en Kaiba.
-	var mask_tex := Assets.texture("kaiba/duel/phase/ph_b_dr.png" if game == "kaiba" else "%s/duel/phase/pha_s_dr.png" % game)
+	var mask_tex := Assets.texture("kaiba/duel/phase/ph_b_dr.png" if theme == "kaiba" else "%s/duel/phase/pha_s_dr.png" % theme)
 	_phase_mask = mask_tex.get_image() if mask_tex != null else null
 	_duel.input_right_held_query = func() -> bool: return PlatformInput.mouse_pressed(MOUSE_BUTTON_RIGHT)
 	_setup_presentation(true)
 	_help = DuelHelp.new()
-	_help.setup(game)
+	_help.setup(theme)
 	add_child(_help)
-	Audio.play_music(preload("res://scenes/duel/duel_music.gd").path(game, Game.duel_mode, _shown_lp()))
+	Audio.play_music(preload("res://scenes/duel/duel_music.gd").path(theme, Game.duel_mode, _shown_lp()))
 	_redraw()
 
 func _process(_delta: float) -> void:
@@ -187,7 +192,7 @@ func _process(_delta: float) -> void:
 	if _help != null: _help.show_between(_engine_clock)
 	var start_shade: bool = _visual != null and _visual._start_banner_shade
 	var presenting := _advance_visual(_delta)
-	if game in ["yugi", "kaiba"] and start_shade and not _visual._start_banner_shade:
+	if theme in ["yugi", "kaiba"] and start_shade and not _visual._start_banner_shade:
 		_start_banner_ack = true
 	if _wait_label != null:
 		# 44ba10: sin cartel mientras hay objetos de presentacion activos.
@@ -317,14 +322,16 @@ func _start_result() -> void:
 		_visual._render()
 	_result = DuelResult.new()
 	var surrendered: bool = _duel is JoeyPresentationAdapter and (_duel.engine.m.u16(JoeyMem.MODE) & 0x40) != 0
-	_result.setup(game, winner, _duel.m.u32(0xa114b4), surrendered)
+	_result.setup(theme, winner, _duel.m.u32(0xa114b4), surrendered, game)
 	# Estado 7 de 0x435410: match sin decidir -> escena 10 y siguiente duelo; si no, la salida
 	# de Yugi con el resultado global. La musica la gestiona Game: en Yugi sigue sonando.
 	_result.finished.connect(func() -> void:
+		# Game.current_game es el rival real; `game` solo dice que motor corre la escena
+		# (en el juego combinado siempre es Joey, cualquiera sea el oponente).
 		if Game.duel_mode == 1 and Game.match_outcome == 0:
-			Game.continue_match(game)
+			Game.continue_match(Game.current_game)
 		else:
-			Game.finish_normal_duel(game, Game.match_outcome if Game.duel_mode in [0, 1, 3] else winner))
+			Game.finish_normal_duel(Game.current_game, Game.match_outcome if Game.duel_mode in [0, 1, 3] else winner))
 	add_child(_result)
 
 
@@ -367,9 +374,9 @@ func _phase_hover() -> int:
 	if _phase_busy() or _phase_mask == null:
 		return -1
 	var pos := Vector2i(_pointer_pos.floor())
-	if game == "kaiba":
+	if theme == "kaiba":
 		return _phase_hover_kaiba(pos)
-	if game == "joey":
+	if theme == "joey":
 		# Jo4812e0: rectangulo 29x54, y relativa en [3,57), sin mascara de pixeles.
 		var x := pos.x - _ph_pos[0][0]
 		if x < 0 or x >= 29: return -1
@@ -420,7 +427,7 @@ func _show_list() -> void:
 	if _list_window != null and is_instance_valid(_list_window):
 		return
 	_list_window = preload("res://scenes/duel/duel_list_window.gd").new()
-	_list_window.setup(self, _duel, game)
+	_list_window.setup(self, _duel, theme)
 	add_child(_list_window)
 
 
@@ -447,7 +454,7 @@ func _show_dialog() -> void:
 	if _dialog_box != null:
 		return
 	var window: Node2D = preload("res://scenes/duel/duel_dialog_window.gd").new()
-	window.setup(self, _duel, game, _dialog_text(_duel.dialog_open))
+	window.setup(self, _duel, theme, _dialog_text(_duel.dialog_open))
 	add_child(window)
 	_dialog_box = window
 
@@ -488,7 +495,7 @@ func _collect_events() -> void:
 			if game == "joey" and int(data["loc"]) == DuelMem.LOC_BANISH:
 				at = DuelGeometry.JOEY_EXCLUDED[int(data["p"]) & 1]
 			if int(data["loc"]) == 11: at += DuelGeometry.hand_cursor_offset(int(data["p"]) & 1)
-			PointerGlide.request(_pointer_pos, at, game)
+			PointerGlide.request(_pointer_pos, at, theme)
 			_hover_card = _hit_card(PointerGlide.hover(_pointer_pos))
 			if not _hover_card.is_empty():
 				_set_preview(_hover_card["id"] if _hover_card["known"] else -1)
@@ -540,16 +547,16 @@ func _phase_glow() -> int:
 ## columna 8 - min(t,64)/8 de su tira (pha_b_* para el jugador 0, pha_r_* para el 1), 3 px
 ## mas abajo.
 func _draw_phase_panel() -> void:
-	if game == "kaiba":
+	if theme == "kaiba":
 		_draw_phase_panel_kaiba(_phase_glow())
 		return
 	var glow := _phase_glow()
 	var fade_alpha: float = _ph_blend.at(["fade", _ph_p, _ph_phase], (_ph_fade << 1) & 0xff) if _ph_fade < 0x80 else 0.0
 	# Jo4817e2: pulsa desde256 hasta768, alfa255 hasta reiniciar1024.
 	var pulse_alpha: float = 255.0
-	if game == "joey" and _ph_fade >= 0x100 and _ph_fade < 0x300:
+	if theme == "joey" and _ph_fade >= 0x100 and _ph_fade < 0x300:
 		pulse_alpha = _ph_blend.at(["pulse", _ph_p, _ph_phase], 127 + absi(DuelVisualMath.cos_fx((_ph_fade - 256) / 2) >> 9))
-	var state := [_ph_p, _ph_phase, _ph_fade if game == "joey" or _ph_fade < 0x80 else 0x80, _ph_intro, glow, fade_alpha, pulse_alpha]
+	var state := [_ph_p, _ph_phase, _ph_fade if theme == "joey" or _ph_fade < 0x80 else 0x80, _ph_intro, glow, fade_alpha, pulse_alpha]
 	if state == _ph_drawn:
 		return
 	_ph_drawn = state
@@ -557,21 +564,21 @@ func _draw_phase_panel() -> void:
 		c.free()
 	var row := 1 if _ph_p != 0 else 0
 	for k in 6:
-		var at := Vector2(_ph_pos[k][0], _ph_pos[k][1]) if game == "joey" else PHASE_ORIGIN + Vector2(0, PHASE_STEP * k)
-		var sheet := "%s/duel/phase/pha_s_%s.png" % [game, PHASE_NAMES[k]]
+		var at := Vector2(_ph_pos[k][0], _ph_pos[k][1]) if theme == "joey" else PHASE_ORIGIN + Vector2(0, PHASE_STEP * k)
+		var sheet := "%s/duel/phase/pha_s_%s.png" % [theme, PHASE_NAMES[k]]
 		if _ph_intro < 0x200:
 			var t := _ph_intro - k * 24 - 0x40
 			if t < 0:
 				_phase_cell(sheet, at, Vector2(0, 1 - row), 1.0)
 			else:
-				var strip := "%s/duel/phase/pha_%s_%s.png" % [game, "b" if _ph_p == 0 else "r", PHASE_NAMES[k]]
+				var strip := "%s/duel/phase/pha_%s_%s.png" % [theme, "b" if _ph_p == 0 else "r", PHASE_NAMES[k]]
 				_phase_cell(strip, at + Vector2(0, 3), Vector2(8 - (mini(t, 0x40) >> 3), 0), 1.0)
 			continue
 		if k == _ph_phase:
 			if _ph_fade < 0x80:
 				_phase_cell(sheet, at, Vector2(0, row), 1.0)
 				_phase_cell(sheet, at, Vector2(1, row), fade_alpha / 255.0)
-			elif game == "joey" and _ph_fade >= 0x100:
+			elif theme == "joey" and _ph_fade >= 0x100:
 				_phase_cell(sheet, at, Vector2(0, row), 1.0)
 				_phase_cell(sheet, at, Vector2(1, row), pulse_alpha / 255.0)
 			else:
@@ -590,7 +597,7 @@ func _phase_cell(path: String, at: Vector2, cell: Vector2, alpha: float, add := 
 	s.texture = tex
 	s.centered = false
 	s.region_enabled = true
-	var cell_size := Vector2(40, 75) if game == "joey" else PHASE_CELL
+	var cell_size := Vector2(40, 75) if theme == "joey" else PHASE_CELL
 	s.region_rect = Rect2(cell * cell_size, cell_size)
 	s.position = at
 	s.modulate.a = alpha
@@ -607,7 +614,7 @@ func _hides_rival_hand() -> bool:
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel") and _duel == null:
 		Audio.stop_music()
-		Game.open_title(game, "duel")
+		Game.return_home(game, "duel")
 	elif event is InputEventKey and event.pressed and not event.echo and _duel != null:
 		var bit: int = preload("res://core/duel_input.gd").bits(event, game)
 		if bit != 0:

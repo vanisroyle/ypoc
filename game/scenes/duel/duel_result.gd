@@ -19,6 +19,8 @@ const CARD_H := 290
 const RewardInput = preload("res://core/duel_input.gd")
 
 var game := "yugi"
+## Motor del duelo (en modo combinado distinto del paquete de arte `game`).
+var engine := ""
 var result := 0
 var _state := 0
 var _banner := 0
@@ -54,8 +56,9 @@ var _surrendered := false
 
 
 ## `winner`: 1 gana el jugador, 2 la CPU, 3 empate (0x53d650).
-func setup(game_id: String, winner: int, duel_flags: int = 0, surrendered := false) -> void:
+func setup(game_id: String, winner: int, duel_flags: int = 0, surrendered := false, engine_id := "") -> void:
 	game = game_id
+	engine = engine_id if engine_id != "" else game_id
 	result = winner
 	_surrendered = surrendered
 	z_index = 70
@@ -70,14 +73,14 @@ func setup(game_id: String, winner: int, duel_flags: int = 0, surrendered := fal
 		_save_cards()
 	# 435410 estado1, DAT_a114b4 bit8. Joey 447000 estado1: tras rendirse (a54e5c & 0x40)
 	# tampoco pregunta por la repetición.
-	if (duel_flags & 0x100) != 0 or (_surrendered and game == "joey"): _after_replay()
+	if (duel_flags & 0x100) != 0 or (_surrendered and engine == "joey"): _after_replay()
 
 
 ## 0x433e50: estadisticas comunes y racha (DAT_00a11218, DAT_00a11215/16).
 func _record(duel_flags := 0) -> void:
 	# 446df0 con a54e5c & 0x40 (Joey) y 433e50 con DAT_a114b4 bit8 (Yugi/Kaiba, comando0x40):
 	# la rendicion no suma victorias/derrotas, racha ni nivel; una victoria previa deja la racha a 0.
-	if (_surrendered and game == "joey") or (game != "joey" and (duel_flags & 0x100) != 0):
+	if (_surrendered and engine == "joey") or (engine != "joey" and (duel_flags & 0x100) != 0):
 		SaveData.ensure_game(game)
 		var surrendered_stats: Dictionary = SaveData.data["stats"][game]
 		if int(surrendered_stats.get("streak_last", 0)) == 1: surrendered_stats["streak"] = 0
@@ -211,6 +214,17 @@ static func replays_dir(game_id: String) -> String:
 	return Paths.save_dir.path_join("replays").path_join(game_id)
 
 
+## El formato .ydr no tiene campo para el rival: en el juego combinado la grabacion se
+## archiva bajo el motor (joey) y el tema se guarda en un json junto al archivo.
+static func replay_theme(game_id: String, name: String) -> String:
+	var sidecar := replays_dir(game_id).path_join(name + ".json")
+	if FileAccess.file_exists(sidecar):
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(sidecar))
+		if parsed is Dictionary and str(parsed.get("theme", "")) in ["yugi", "kaiba", "joey"]:
+			return str(parsed["theme"])
+	return game_id
+
+
 static func replay_files(game_id: String) -> PackedStringArray:
 	var out := PackedStringArray()
 	var dir := replays_dir(game_id)
@@ -226,7 +240,8 @@ static func replay_files(game_id: String) -> PackedStringArray:
 ## (0x4370b0 -> 0x436f60) y, si falla, el estado 4 avisa (0x459550) y vuelve a la lista.
 ## Si el nombre ya existe se confirma con el modo 2 del mismo cuadro (deck_c/overwrite.txt).
 func _save_replay() -> void:
-	var d: PocDialog = load("res://scenes/deck_editor/deck_file_dialog.gd").for_replay(game, 4, replay_files(game))
+	# La grabacion se archiva bajo el motor (joey), no el tema del rival.
+	var d: PocDialog = load("res://scenes/deck_editor/deck_file_dialog.gd").for_replay(game, 4, replay_files(engine))
 	d.closed.connect(func(id: String) -> void:
 		if id == "ok":
 			_write_replay(d.chosen_name)
@@ -238,7 +253,7 @@ func _save_replay() -> void:
 
 
 func _write_replay(name: String, confirmed := false) -> void:
-	var path := replays_dir(game).path_join(name + ".ydr")
+	var path := replays_dir(engine).path_join(name + ".ydr")
 	if FileAccess.file_exists(path) and not confirmed:
 		var dir := "%s/deck_c/" % game
 		var d := PocDialog.new(Assets.texture(dir + Assets.layout(dir + "overwrite.txt").resource(0)))
@@ -254,6 +269,12 @@ func _write_replay(name: String, confirmed := false) -> void:
 		return
 	var duel := get_parent()
 	if duel != null and duel.has_method("make_replay") and duel.make_replay().save(path):
+		# `game` aqui es el tema (el rival), no el motor: el visor lo necesita para
+		# reproducir con el arte correcto y la lista para etiquetar la grabacion.
+		var f := FileAccess.open(path.get_basename() + ".json", FileAccess.WRITE)
+		if f != null:
+			f.store_string(JSON.stringify({"theme": game}))
+			f.close()
 		_after_replay()
 	else:
 		Audio.play_sfx("%s/voice/internal/unable.wav" % game)

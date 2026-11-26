@@ -89,6 +89,16 @@ func add_card(internal_id: int, copies := 1) -> void:
 	data["collection"][key] = card_count(internal_id) + copies
 
 
+## Contrasena del jugador: sube a `copies` las copias de una carta (como unlock_all, una sola).
+func unlock_card(internal_id: int, copies := 3) -> int:
+	data.erase("starter_pending")
+	var key := str(internal_id)
+	var before := card_count(internal_id)
+	data["collection"][key] = maxi(copies, before)
+	save()
+	return int(data["collection"][key]) - before
+
+
 ## Cartas ya vistas en la lista: las que se tienen y no se han visto llevan el "NEW".
 func is_seen(internal_id: int) -> bool:
 	return data["seen"].has(str(internal_id))
@@ -209,7 +219,7 @@ func _commit_import(fresh: Dictionary, keep_deck_header: bool) -> bool:
 ## f540450 no lo reproduce.
 ## Devuelve {block, decks}: el bloque (actualizado si cambio) y el mazo de cada juego.
 ## El motor de Yugi se carga al validar mazos: tiparlo aquí lo compilaba entero (cientos de
-## milisegundos en PC, varios segundos en Android) antes de mostrar el launcher.
+## milisegundos habitualmente) antes de mostrar el launcher.
 static func _duel_script() -> Script:
 	return load("res://duel/core/duel.gd")
 
@@ -516,6 +526,24 @@ func ensure_game(game: String, validate_startup := true) -> void:
 		changed = _ensure_startup_deck(game) or changed
 	if changed:
 		save()
+
+
+## Campaña: rivales derrotados en orden (yugi -> kaiba -> joey); persiste en system.json.
+func campaign_mark_defeated(game: String) -> void:
+	var campaign: Dictionary = data.get_or_add("campaign", {})
+	var defeated: Array = campaign.get_or_add("defeated", [])
+	if game not in defeated:
+		defeated.append(game)
+		save()
+
+
+## Primer juego instalado aun sin vencer en la campaña; "" con la campaña completa.
+func campaign_next() -> String:
+	var defeated: Array = data.get("campaign", {}).get("defeated", [])
+	for game in GAMES:
+		if Paths.has_game(game) and game not in defeated:
+			return game
+	return ""
 
 
 ## Conserva la ranura comun del original. Version 1 separaba totales por juego:

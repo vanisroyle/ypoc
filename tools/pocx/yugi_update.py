@@ -103,7 +103,10 @@ def extract_update(root: Path, workspace: Path, sevenzip: str) -> tuple[Path, Pa
         raise ValueError("Update.exe and update.tmp are missing from the selected Kaiba media")
     installer, data = files
     with data.open("rb") as source:
-        if hashlib.file_digest(source, "sha256").hexdigest() != DATA_SHA256:
+        digest = hashlib.sha256()
+        while chunk := source.read(1 << 20):
+            digest.update(chunk)
+        if digest.hexdigest() != DATA_SHA256:
             raise ValueError("update.tmp is not the verified December 2003 Yugi catalogue")
     workspace.mkdir(parents=True, exist_ok=True)
     msp = workspace / MSP_NAME.decode("ascii")

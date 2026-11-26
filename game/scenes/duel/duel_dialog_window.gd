@@ -39,6 +39,8 @@ const BTN := Vector2i(111, 33)
 var scene: Node
 var duel: Duel
 var game := "yugi"
+## Motor del duelo (bits de entrada); `game` es el paquete de arte.
+var engine := ""
 var type := 0
 var data: Dictionary = {}
 var _text := ""
@@ -134,6 +136,7 @@ func setup(scene_node: Node, the_duel: Duel, game_id: String, text: String) -> v
 	scene = scene_node
 	duel = the_duel
 	game = game_id
+	engine = scene_node.get("game") if scene_node != null and scene_node.get("game") is String else game_id
 	data = duel.dialog_open
 	type = int(data.get("type", 0))
 	_text = text
@@ -159,16 +162,17 @@ func setup(scene_node: Node, the_duel: Duel, game_id: String, text: String) -> v
 	var extra: int = {0: 40, 1: 40, 6: 100, 7: 50, 8: 40, 9: 40}.get(type, 0)
 	if type == 2 or type == 3:
 		extra = _lines.size() * OPTION_STEP + 4
+	# El motor Joey emite selectores de tipo/atributo (tipos 4/5) bajo cualquier tema.
+	if engine == "joey" and type in [4, 5]:
+		extra = 96 if type == 4 else 64
+		_icons = IconSelector.new()
+		_icons.setup(type, int(data.get("icon_arg", 0)))
 	_height = (TOP_PAD + 13 + _text_height + extra + 12) / 13 * 13
 	if game == "kaiba":
 		_height = _text_height + 12 + (16 if type == 1 else 0)
 		_height += _lines.size() * OPTION_STEP if type in [2, 3] else {6: 100, 7: 50, 8: 40, 9: 40}.get(type, 0)
 		_height += _height & 1 # 467ad0: alto par.
 	if game == "joey":
-		if type in [4, 5]:
-			extra = 96 if type == 4 else 64
-			_icons = IconSelector.new()
-			_icons.setup(type, int(data.get("icon_arg", 0)))
 		_interior_width = 380
 		_height = _text_height + 12 + extra
 		if type in [2, 3]:
@@ -227,7 +231,7 @@ func _build_items() -> void:
 	var bottom := _bottom()
 	match type:
 		4, 5:
-			if game != "joey": return
+			if engine != "joey": return
 			var atlas := Assets.texture("joey/duel/card/icon_syuzoku.png" if type == 4 else "joey/duel/card/icon_zokusei.png")
 			if atlas == null: return
 			var cells := 20 if type == 4 else 10
@@ -341,7 +345,7 @@ func _keyboard_tick() -> void:
 	if _keys & (1 << 6):
 		var picked := _pick(PointerGlide.hover(_pointer + position) - position)
 		if picked >= 0: _activate_item(picked)
-	if _keys & (1 << preload("res://core/duel_input.gd").cancel_slot(game)):
+	if _keys & (1 << preload("res://core/duel_input.gd").cancel_slot(engine if engine != "" else game)):
 		if type == 1: _request_answer(0)
 		elif type == 3 and int(data.get("default", -1)) >= 0:
 			_request_answer(int(data["default"]))
@@ -482,7 +486,7 @@ func _input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo and type not in [8, 9]:
 		# La ventana consume el evento antes de que llegue al autoload: anotar su actividad.
 		Game._input(event)
-		_keys |= preload("res://core/duel_input.gd").slots(event, game)
+		_keys |= preload("res://core/duel_input.gd").slots(event, engine if engine != "" else game)
 		get_viewport().set_input_as_handled()
 	elif event is InputEventMouseMotion:
 		if not PointerGlide.drove(event.position):

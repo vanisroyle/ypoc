@@ -40,7 +40,6 @@ const SVG_CLOUD := SVG_HEAD + "<path d='M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 
 const DEFAULT_VOLUME := 0.5
 var volume := DEFAULT_VOLUME
 var muted := false
-var pointer_mode := "menu"
 var panel_open := false
 
 var _icons := {}             # nombre -> {tex, offset} (offset = centrado optico medido)
@@ -58,7 +57,6 @@ var _reset_dialog := ConfirmationDialog.new()
 var _reset_result := AcceptDialog.new()
 var _cloud_dialog: AcceptDialog = preload("res://scenes/launcher/cloud_dialog.gd").new()
 const DialogTheme = preload("res://scenes/launcher/dialog_theme.gd")
-var _save_choice := "reset"  # fila Partida: "reset" o "pack" (Importar .pck, solo Android)
 
 
 func _ready() -> void:
@@ -80,7 +78,6 @@ func _ready() -> void:
 	config.load(Paths.settings_path())
 	volume = clampf(float(config.get_value("launcher", "music_volume", saved.get("music_volume", DEFAULT_VOLUME))), 0.0, 1.0)
 	muted = bool(config.get_value("launcher", "music_muted", saved.get("music_muted", false)))
-	pointer_mode = str(saved.get("pointer_mode", "menu"))
 	for pair in [["sound", SVG_SOUND], ["muted", SVG_MUTED], ["gear", SVG_GEAR],
 			["close", SVG_CLOSE], ["exit", SVG_EXIT], ["update", SVG_UPDATE], ["cloud", SVG_CLOUD]]:
 		_icons[pair[0]] = _rasterize(pair[1])
@@ -127,36 +124,16 @@ func _settings_center() -> Vector2:
 
 
 func _panel_rect() -> Rect2:
-	var panel_size := Vector2(540, 540) if _mobile_controls() else PANEL_SIZE
-	return Rect2((_screen() - panel_size) / 2.0, panel_size)
-
-
-func _mobile_controls() -> bool:
-	return OS.has_feature("mobile") or Paths.cmdline_value("mobile-controls") == "true"
-
-
-func _mode_rect(mode: String) -> Rect2:
-	var box := _control_rect(6)
-	var width := (box.size.x - 8.0) / 2.0
-	return Rect2(box.position + Vector2(width + 8.0 if mode == "menu" else 0.0, 0), Vector2(width, box.size.y))
+	return Rect2((_screen() - PANEL_SIZE) / 2.0, PANEL_SIZE)
 
 
 func _reset_row() -> int:
-	return 7 if _mobile_controls() else 6
+	return 6
 
 
-## Android con recursos importados: Importar .pck sustituye el paquete (p. ej. para añadir Kaiba).
-func _pack_available() -> bool:
-	return Paths.android_platform() and FileAccess.file_exists(Paths.user_content_pack_path())
-
-
-## Fila Partida: reiniciar; en Android con recursos, a la derecha Importar .pck.
-func _save_rect(choice: String) -> Rect2:
-	var box := _control_rect(_reset_row())
-	if not _pack_available():
-		return box if choice == "reset" else Rect2()
-	var width := (box.size.x - 8.0) / 2.0
-	return Rect2(box.position + Vector2(width + 8.0 if choice == "pack" else 0.0, 0), Vector2(width, box.size.y))
+## Fila Partida: reiniciar.
+func _save_rect() -> Rect2:
+	return _control_rect(_reset_row())
 
 
 func _close_center() -> Vector2:
@@ -188,13 +165,8 @@ func _option_rect(row: int) -> Rect2:
 
 func _hit(pos: Vector2) -> String:
 	if panel_open:
-		for choice in ["reset", "pack"]:
-			if _save_rect(choice).has_point(pos):
-				return choice
-		if _mobile_controls():
-			for mode in ["hold", "menu"]:
-				if _mode_rect(mode).has_point(pos):
-					return mode
+		if _save_rect().has_point(pos):
+			return "reset"
 		if pos.distance_to(_close_center()) <= 16:
 			return "close"
 		if _slider_rect().grow_individual(8, 12, 8, 12).has_point(pos):
@@ -259,18 +231,9 @@ func _input(event: InputEvent) -> void:
 				update_requested.emit()
 			"reset":
 				_focused_row = _reset_row()
-				_save_choice = "reset"
 				_request_reset()
 			"cloud":
 				_cloud_dialog.popup_centered()
-			"pack":
-				_focused_row = _reset_row()
-				_save_choice = "pack"
-				_import_pack()
-			"hold", "menu":
-				pointer_mode = _hit(local_pos)
-				_focused_row = 6
-				_save_pointer_mode()
 			"close", "outside":
 				_open_panel(false)
 			"slider":
@@ -302,23 +265,12 @@ func _input(event: InputEvent) -> void:
 			_save()
 		elif _focused_row < _reset_row():
 			_cycle_option(_focused_row - 1, step)
-		elif _pack_available():
-			_save_choice = "pack" if _save_choice == "reset" else "reset"
 	elif event.is_action_pressed("ui_accept"):
 		if _focused_row == _reset_row():
-			if _save_choice == "pack" and _pack_available():
-				_import_pack()
-			else:
-				_request_reset()
+			_request_reset()
 		elif _focused_row >= 1:
 			_cycle_option(_focused_row - 1, 1)
 	get_viewport().set_input_as_handled()
-
-
-func _import_pack() -> void:
-	var setup: Control = load("res://scenes/launcher/android_content_setup.gd").new()
-	setup.replace = true
-	Game.goto(setup)
 
 
 func _request_reset() -> void:
@@ -341,9 +293,6 @@ func _confirm_reset() -> void:
 		Assets.set_language(Assets.preferred_language())
 		volume = DEFAULT_VOLUME
 		muted = false
-		pointer_mode = "menu"
-		if is_instance_valid(Game._mobile_pointer):
-			Game._mobile_pointer.cancel()
 		_dragging = false
 		_focused_row = 0
 		changed.emit()
@@ -372,9 +321,6 @@ func _cycle_option(row: int, step: int) -> void:
 			LauncherSettings.fast_play = not LauncherSettings.fast_play
 		4:
 			LauncherSettings.improved_card_texts = not LauncherSettings.improved_card_texts
-		5:
-			pointer_mode = "hold" if pointer_mode == "menu" else "menu"
-			_save_pointer_mode()
 	LauncherSettings.save_preferences()
 	if row == 4 and LauncherSettings.improved_card_texts:
 		CardTranslations.ensure_spanish_pack()
@@ -414,13 +360,6 @@ func _save() -> void:
 	var error := config.save(Paths.settings_path())
 	if error != OK:
 		push_error("No se pudo guardar el sonido del launcher: " + error_string(error))
-	changed.emit()
-
-
-func _save_pointer_mode() -> void:
-	SaveData.data.get_or_add("launcher", {})["pointer_mode"] = pointer_mode
-	if Paths.has_data():
-		SaveData.save()
 	changed.emit()
 
 
@@ -567,27 +506,12 @@ func _draw_panel() -> void:
 			_draw_slider()
 		else:
 			_draw_selector(box, values[row - 1], hot)
-	if _mobile_controls():
-		_label_mid("Control táctil" if spanish else "Touch controls", Vector2(r.position.x + 36, _control_rect(6).get_center().y), 17, GOLD_LIGHT)
-		for mode in ["hold", "menu"]:
-			var box := _mode_rect(mode)
-			var selected: bool = pointer_mode == mode
-			_round_rect(box, Color(GOLD, 0.16) if selected else STONE, 7, GOLD if selected else Color(GOLD, 0.35))
-			var label := ("Mantener" if spanish else "Hold") if mode == "hold" else ("Menú" if spanish else "Menu")
-			var width := _font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, 16).x
-			_label_mid(label, box.get_center() - Vector2(width / 2.0, 0), 16, GOLD_LIGHT if selected else GOLD)
-	var reset_box := _save_rect("reset")
-	var reset_hot := _hover == "reset" or (_focused_row == _reset_row() and _save_choice == "reset")
+	var reset_box := _save_rect()
+	var reset_hot := _hover == "reset" or _focused_row == _reset_row()
 	_label_mid("Partida" if spanish else "Save data", Vector2(r.position.x + 36, reset_box.get_center().y), 17, GOLD_LIGHT)
 	_round_rect(reset_box, Color(0.20, 0.035, 0.03), 7, GOLD if reset_hot else Color(GOLD, 0.35))
 	var reset_label := "Reiniciar…" if spanish else "Reset…"
 	_label_mid(reset_label, reset_box.get_center() - Vector2(_font.get_string_size(reset_label, HORIZONTAL_ALIGNMENT_LEFT, -1, 16).x / 2.0, 0), 16, GOLD_LIGHT)
-	if _pack_available():
-		var pack_box := _save_rect("pack")
-		var pack_hot := _hover == "pack" or (_focused_row == _reset_row() and _save_choice == "pack")
-		_round_rect(pack_box, STONE, 7, GOLD if pack_hot else Color(GOLD, 0.35))
-		var pack_label := "Importar .pck…" if spanish else "Import .pck…"
-		_label_mid(pack_label, pack_box.get_center() - Vector2(_font.get_string_size(pack_label, HORIZONTAL_ALIGNMENT_LEFT, -1, 16).x / 2.0, 0), 16, GOLD_LIGHT)
 	if LauncherSettings.improved_card_texts:
 		var foot := r.end.y - 34
 		draw_line(Vector2(r.position.x + 36, foot - 16), Vector2(r.end.x - 36, foot - 16), Color(GOLD, 0.18), 1.0, true)

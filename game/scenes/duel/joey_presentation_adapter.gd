@@ -503,15 +503,6 @@ func synchronize_view() -> void:
 		joey_next_identity[view_p] = engine.m.u16(source + 6)
 	m.set_u16(0xa133f2, engine.m.u16(JoeyMem.TURN) ^ local_native_player)
 	m.set_u16(0xa133f0, engine.m.u16(0xa577f8))
-	# Sin el autoload Paths: las pruebas pueden precargar el adaptador antes de crearlo.
-	if OS.has_feature("mobile") or "--mobile-controls=true" in OS.get_cmdline_user_args():
-		# Vista táctil de solo lectura: acciones y estado del selector nativo (mobile_pointer).
-		var native_action := engine.m.u32(0xa57804)
-		m.set_u32(0xa13408, (native_action & 3) | (((native_action >> 3) & 15) << 2))
-		m.set_u16(0xa1340a, engine.m.u16(0xa57806))
-		m.set_u8(0xa1340d, engine.m.u8(0xa57809))
-		for action_i in 12:
-			m.set_u8(0x59df1c + action_i * 4, engine.m.u8(0x5dd980 + action_i * 4))
 	m.set_u8(0xa16180, engine.m.u8(0xa577fd))
 	m.set_u16(DuelMem.QUEUE_COUNT, engine.m.u16(JoeyMem.QUEUE_COUNT))
 	m.set_u32(DuelMem.CMD_STATE, DuelMem.CMD_RUNNING if is_running() else 0)

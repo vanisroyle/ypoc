@@ -47,6 +47,14 @@ func by_id(internal_id: int) -> Dictionary:
 	return _by_internal_id.get(internal_id, {})
 
 
+## Codigo de 8 digitos impreso en la carta real; 0 si no tiene.
+func by_password(code: int) -> Dictionary:
+	for card: Dictionary in cards:
+		if int(card.get("password", 0)) == code and code > 0:
+			return card
+	return {}
+
+
 func name_of(internal_id: int, lang := "") -> String:
 	var card := by_id(internal_id)
 	return text(card, "names", lang) if card else "?"
@@ -64,6 +72,11 @@ func text(card: Dictionary, field: String, language := "") -> String:
 
 func obtainable_in(game: String) -> Array[Dictionary]:
 	return _filter(PACK_BITS[game])
+
+
+## Todas las cartas obtenibles en cualquiera de los tres juegos (union de packs).
+func obtainable() -> Array[Dictionary]:
+	return _filter(PACK_BITS["yugi"] | PACK_BITS["kaiba"] | PACK_BITS["joey"])
 
 
 func usable_in(game: String) -> Array[Dictionary]:

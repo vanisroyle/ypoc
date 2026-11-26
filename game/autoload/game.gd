@@ -18,13 +18,12 @@ class WindowShortcuts:
 			LauncherSettings.toggle_fullscreen(get_tree().root)
 
 var _window_shortcuts := WindowShortcuts.new()
-var _mobile_pointer: CanvasLayer
 
 const DUEL_VIEWER_PATH := "res://scenes/duel/replay_viewer.gd"
 
 var current_game := ""
 ## Mazo del rival elegido al entrar al duelo desde el menu (0x437c60), "" = el de demo1.
-var rival_deck := ""
+var rival_deck: Variant = ""
 ## Modo del duelo (DAT_005af778, 0x437f40): 0 duelo normal, 1 torneo (match al mejor de 3).
 var duel_mode := 0
 ## Match: duelo actual 1..3 (DAT_005af76b), resultado de cada duelo (DAT_005af768[]: 1 gana el
@@ -37,6 +36,7 @@ var _screen_replay_frame := 0
 var _screen_host: Node
 var _scene_wipe: Node
 const SCENE_WIPE := preload("res://core/scene_wipe.gd")
+const AI_DECKS := preload("res://core/ai_decks.gd")
 ## Contador global por vuelta del bucle principal (NativeClock.HZ): Yugi40c140(5aed18), Kaiba40c370(5b1d38).
 ## Persiste entre escenas; los titulos/tutoriales lo reinician en sus puntos nativos.
 var native_tick := 0
@@ -91,9 +91,6 @@ func _ready() -> void:
 	if language == "":
 		language = Assets.preferred_language()
 	Assets.set_language(language)
-	if OS.has_feature("mobile") or Paths.cmdline_value("mobile-controls") == "true":
-		_mobile_pointer = preload("res://core/mobile_pointer.gd").new()
-		get_tree().root.add_child.call_deferred(_mobile_pointer)
 	get_tree().root.add_child.call_deferred(_window_shortcuts)
 	# 0x40c66a: el MT de interfaz se siembra una vez al arrancar con GetTickCount (Debug lo
 	# resiembra despues si hay --ui-seed o --ui-replay con semilla).
@@ -104,6 +101,17 @@ func _ready() -> void:
 	_add_key_action("pc_filter", KEY_F)     # editor de mazos: siguiente filtro de la bolsa
 	_add_key_action("pc_sort", KEY_O)       # editor de mazos: ventana de orden
 	_add_key_action("pc_window", KEY_W)     # editor de mazos: plegar/desplegar la bolsa
+	# --ai-decks-dump: lista los mazos extra de la CPU (generados + comunidad).
+	if Paths.cmdline_value("ai-decks-dump") != "":
+		for g in GAMES:
+			for f in AI_DECKS.files(g):
+				print("ai_decks: ", g, "/", f)
+	# --selfplay=<n>: lote de duelos CPU-CPU sin escena que vuelca un JSONL para
+	# tools/selfplay/train.py (herramienta de desarrollo, excluida de los pck).
+	if Paths.cmdline_value("selfplay") != "":
+		var code: int = load("res://selfplay/selfplay_runner.gd").main()
+		get_tree().quit(code)
+		return
 
 
 func _add_key_action(action: String, key: Key) -> void:
@@ -127,7 +135,7 @@ func goto(screen: Node) -> void:
 	var headless := DisplayServer.get_name() == "headless"
 	if not LauncherSettings.fast_play and current_game != "" and (not headless or Debug.headless_wipe) \
 			and is_instance_valid(_screen) and _screen.is_inside_tree() \
-			and _screen.get_script().resource_path.get_file() not in ["launcher.gd", "launcher_android.gd", "content_setup.gd"]:
+			and _screen.get_script().resource_path.get_file() not in ["launcher.gd", "content_setup.gd"]:
 		# Sin ventana no hay imagen que barrer; el cotejo por valores (--ui-values) conserva el
 		# barrido con una imagen vacia porque retiene la pantalla nueva los mismos ticks.
 		if not headless:
@@ -155,9 +163,6 @@ func goto(screen: Node) -> void:
 		get_tree().root.add_child.call_deferred(_screen_host)
 	else:
 		get_tree().root.add_child.call_deferred(screen)
-	if is_instance_valid(_mobile_pointer):
-		_mobile_pointer.cancel()
-		get_tree().root.move_child.call_deferred(_mobile_pointer, -1)
 	get_tree().root.move_child.call_deferred(_window_shortcuts, -1)
 	if old_frame != null:
 		_start_scene_wipe.call_deferred(old_frame, screen, effect, waves)
@@ -227,19 +232,22 @@ func _start_scene_wipe(old_frame: Texture2D, screen: Node, effect := 0x13, waves
 
 
 
+## Sesion combinada: las pantallas vuelven al menu unico con return_home; al
+## entrar a un titulo suelto por el launcher vuelve a false.
+var combined := false
+
+
 func open_launcher() -> void:
+	combined = false
 	current_game = ""
-	# Android: biblioteca instalada o importador del PCK privado. PC: biblioteca e importador
-	# de las copias del usuario (content_setup amplía el launcher de escritorio).
-	if Paths.android_platform():
-		goto(load("res://scenes/launcher/launcher_android.gd").new() if Paths.has_data() else load("res://scenes/launcher/android_content_setup.gd").new())
-	else:
-		goto(load("res://scenes/launcher/content_setup.gd").new())
+	# Biblioteca e importador de las copias del usuario (content_setup amplía el launcher).
+	goto(load("res://scenes/launcher/content_setup.gd").new())
 
 
 ## Al volver de otra pantalla (`focus` = opcion de la que se viene) no se repite la portada
 ## de Yugi y el cursor queda en esa opcion.
 func open_title(game: String, focus := "", launcher_cover: CanvasLayer = null) -> void:
+	combined = false
 	if not Paths.has_game(game):
 		open_launcher()
 		return
@@ -257,8 +265,28 @@ func open_title(game: String, focus := "", launcher_cover: CanvasLayer = null) -
 func open_ending(game: String, mode := "credits") -> void:
 	current_game = game
 	var scene: Node2D = load("res://scenes/ending/ending_scene.gd").new(game, mode)
-	scene.finished.connect(open_title.bind(game), CONNECT_ONE_SHOT)
+	scene.finished.connect(open_main_menu, CONNECT_ONE_SHOT)
 	goto(scene)
+
+
+## Menu unico del juego combinado (portada; estructura del menu de Joey):
+## "duel" abre en la pagina de rivales de la campaña (yugi -> kaiba -> joey).
+func open_main_menu(page := "") -> void:
+	combined = true
+	current_game = "yugi"
+	for g in GAMES:
+		if Paths.has_game(g):
+			current_game = g   # joey si esta; el mas completo instalado si no
+	goto(load("res://scenes/campaign/campaign_hub.gd").new(page))
+
+
+## Vuelta atras desde una pantalla: al menu combinado si la sesion lo es, y al
+## titulo del juego si se entro suelto por el launcher.
+func return_home(game: String, focus := "") -> void:
+	if combined:
+		open_main_menu("duel" if focus in ["duel", "lan"] else "")
+	else:
+		open_title(game, focus)
 
 
 func open_deck_editor(game: String) -> void:
@@ -297,7 +325,8 @@ var joey_demo_deck := ""
 func open_joey_demo() -> void:
 	duel_mode = 0
 	joey_demo = true
-	joey_demo_deck = choose_rival_deck("joey")
+	# La demo lee su mazo por ruta: nunca un Dictionary de AIDecks.
+	joey_demo_deck = _native_rival_deck("joey")
 	rival_deck = choose_rival_deck("joey")
 	# Empieza el lado de arriba (nativo 0 con el local 1 de la demostracion), como hasta ahora.
 	open_normal_duel("joey", 1)
@@ -305,7 +334,10 @@ func open_joey_demo() -> void:
 
 func open_normal_duel(game: String, start_options := -1) -> void:
 	current_game = game
-	if game == "joey":
+	# Juego combinado: todo duelo corre sobre el motor de Joey (su pool es la union
+	# de los tres) y el rival solo aporta mazo, entrada y janken. Los lanzamientos
+	# sueltos por el launcher conservan su motor original.
+	if game == "joey" or (combined and Paths.has_game("joey")):
 		goto(load("res://scenes/duel/joey_native_normal.gd").new(start_options))
 	else:
 		goto(load("res://scenes/duel/normal_duel.gd").new(game, start_options))
@@ -363,7 +395,7 @@ func open_lan(game: String) -> void:
 		else:
 			Lan.close()
 			duel_mode = 0
-			open_title(game, "lan"), CONNECT_ONE_SHOT)
+			return_home(game, "lan"), CONNECT_ONE_SHOT)
 	goto(scene)
 
 
@@ -372,7 +404,7 @@ func lan_lost(game: String) -> void:
 	Lan.close()
 	duel_mode = 0
 	Audio.stop_music()
-	open_title(game)
+	return_home(game, "lan")
 
 
 ## 0x437440 (desde 0x53d9d0 al acabar el duelo): guarda el resultado del duelo y, en match,
@@ -404,21 +436,38 @@ func record_duel_result(result: int) -> void:
 ## Side, deck_editor.gd con "swap").
 func continue_match(game: String) -> void:
 	current_game = game
-	goto(load("res://scenes/deck_editor/deck_editor.gd").new(game, "swap"))
+	goto(load("res://scenes/deck_editor/deck_editor.gd").new(_duel_deck(game), "swap"))
+
+
+## Mazo que usa el duelo: en el juego combinado es siempre el de Joey (pool unido);
+## en una partida suelta, el del propio juego.
+func _duel_deck(game: String) -> String:
+	return "joey" if combined and Paths.has_game("joey") else game
 
 
 ## Salida valida de la escena 10 (0x459c10): 0x437f40(2) (siguiente duelo del match) y
 ## escena 7 (piedra-papel-tijera, que en match elige el perdedor).
 func after_swap(game: String) -> void:
 	match_duel += 1
-	open_janken(game)
+	# El `game` del editor es el mazo (en el juego combinado siempre joey); el rival
+	# del match es current_game. Pasar el del editor convertia los duelos 2 y 3 en joey.
+	open_janken(current_game)
 
 
 ## 0x437c60: mazo de Yugi (data/Y/file/cpu<sufijo>.ydc) segun el porcentaje de cartas que se
 ## tienen de las de este juego (0x45dd50, CARD_Pack con el bit del juego) y la racha
 ## (DAT_00a11215: 1 gana el jugador, 2 la CPU; DAT_00a11216: duelos seguidos). Sin sufijo
 ## especial, uno de 01..04 al azar. Los azares son el MT de interfaz (0x531140 / 0x401ba0).
-func choose_rival_deck(game: String) -> String:
+## Devuelve una ruta json nativa o, a veces, un Dictionary de AIDecks (los mazos
+## generados y los de la comunidad en PoC Data/ai_decks/<juego>).
+func choose_rival_deck(game: String) -> Variant:
+	var extra := AI_DECKS.pick(game, func(): return UiRandom.draw())
+	if not extra.is_empty():
+		return extra
+	return _native_rival_deck(game)
+
+
+func _native_rival_deck(game: String) -> String:
 	var pool := CardDB.obtainable_in(game)
 	var owned := 0
 	for card in pool:
@@ -487,14 +536,34 @@ func finish_normal_duel(game: String, winner: int) -> void:
 		Lan.close()
 	if winner == 0:
 		Audio.stop_music()
-		open_title(game, "duel")
+		if duel_mode == 3:
+			return_home(game, "duel")
+		else:
+			open_main_menu("duel")
 		return
+	# Campaña: vencer al rival pendiente desbloquea al siguiente (yugi -> kaiba -> joey).
+	# Solo contra la CPU: los duelos LAN (modo 3) no cuentan.
+	var completed := false
+	if winner == 1 and duel_mode != 3 and game == SaveData.campaign_next():
+		SaveData.campaign_mark_defeated(game)
+		completed = SaveData.campaign_next() == ""
 	if LauncherSettings.fast_play:
-		open_title(game, "duel")
+		if completed:
+			open_ending(game)
+		elif duel_mode == 3:
+			return_home(game, "duel")
+		else:
+			open_main_menu("duel")
 		return
 	var script: GDScript = load("res://scenes/duel/bust_up_scene.gd") if game == "yugi" else load("res://scenes/duel/bust_up_rival.gd")
 	var scene: Node2D = script.new(game, winner)
-	scene.finished.connect(open_title.bind(game, "duel"), CONNECT_ONE_SHOT)
+	if completed:
+		# Campaña completa: creditos tras el ultimo rival.
+		scene.finished.connect(open_ending.bind(game), CONNECT_ONE_SHOT)
+	elif duel_mode == 3:
+		scene.finished.connect(return_home.bind(game, "duel"), CONNECT_ONE_SHOT)
+	else:
+		scene.finished.connect(open_main_menu.bind("duel"), CONNECT_ONE_SHOT)
 	goto(scene)
 
 

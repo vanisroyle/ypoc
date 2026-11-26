@@ -2,7 +2,7 @@ extends Node
 ## Sesion LAN del port (D17). Sustituye el DirectPlay 8 de igual a igual de Joey
 ## (443650 crea CLSID_DirectPlay8Peer; 443790 hospeda, 4437f0/443840 enumeran, 443860 se une,
 ## 443aa0 recibe, 443e60 envia, 4438d0 cierra) por transporte moderno de Godot que funciona igual
-## en PC y Android:
+## entre equipos en la red local:
 ##   - ENetMultiplayerPeer (UDP con entrega fiable y ordenada) para los mensajes del juego.
 ##   - Descubrimiento por UDP: el anfitrion anuncia la partida por difusion y responde por unicast
 ##     a las consultas de los invitados (lo que en DirectPlay hacia EnumHosts).
@@ -21,7 +21,7 @@ extends Node
 
 ## Puerto del juego. DirectPlay usaba 2302-2400 y 6073 (el original no fija uno propio).
 const GAME_PORT := 47624
-## El anfitrion escucha consultas aqui y responde por unicast (sirve tambien en Android, donde
+## El anfitrion escucha consultas aqui y responde por unicast (sirve tambien donde
 ## algunas redes filtran la difusion recibida).
 const QUERY_PORT := 47625
 ## Los anuncios periodicos del anfitrion van a este puerto por difusion.
@@ -69,8 +69,12 @@ var terminated := false
 var game_port := GAME_PORT
 ## Ultima direccion a la que se llamo con join() (para mensajes y pruebas).
 var joined_address := ""
+## Partida en linea por el rele WebSocket (room code), no por la red local.
+var online := false
+## Rechazo textual del rele (JOIN con codigo malo, sala llena...).
+var relay_error := ""
 
-var _peer: ENetMultiplayerPeer
+var _peer
 var _lost_pending := false
 var _close_requested := false
 var _close_notice_sent := false
@@ -157,6 +161,104 @@ func browse(player_name: String, game_id: String) -> int:
 	return OK
 
 
+## Direccion del rele WebSocket: system.json -> online.relay (ws:// o wss://).
+func relay_url() -> String:
+	return str(SaveData.data.get("online", {}).get("relay", "")).strip_edges()
+
+
+## Clave compartida opcional (online.key en system.json); vacia = rele abierto.
+func online_key() -> String:
+	return str(SaveData.data.get("online", {}).get("key", "")).strip_edges()
+
+
+## Codigo de sala devuelto por el rele al hospedar en linea (vacio hasta "ROOM").
+func room_code() -> String:
+	return _peer.room_code if online and _peer is RelayPeer else ""
+
+
+## Hospedar en linea: abre sala en el rele; players() vale 2 cuando el invitado enlaza
+## ("GO" -> peer_connected -> saludo HELLO igual que en ENet).
+func host_online(player_name: String, game_id: String, public := false) -> int:
+	_finish_close(false)
+	_reset(player_name, game_id)
+	var url := relay_url()
+	if url == "":
+		return ERR_UNCONFIGURED
+	_peer = RelayPeer.new()
+	var err: int = _peer.create_server(url, 0, 0, public, online_key())
+	if err != OK:
+		_peer = null
+		return err
+	_peer.peer_connected.connect(_on_peer_connected)
+	_peer.peer_disconnected.connect(_on_peer_disconnected)
+	online = true
+	is_host = true
+	state = State.HOSTING
+	return OK
+
+
+## Unirse en linea por codigo de sala; el rele enlaza ambos lados.
+func join_online(code: String, player_name: String, game_id: String) -> int:
+	_finish_close(false)
+	_reset(player_name, game_id)
+	var url := relay_url()
+	if url == "":
+		return ERR_UNCONFIGURED
+	_peer = RelayPeer.new()
+	var err: int = _peer.create_client(url, code, online_key())
+	if err != OK:
+		_peer = null
+		return err
+	_peer.peer_connected.connect(_on_peer_connected)
+	_peer.peer_disconnected.connect(_on_peer_disconnected)
+	online = true
+	is_host = false
+	joined_address = url
+	state = State.JOINING
+	return OK
+
+
+## Invitado en linea que aun no eligio sala: conecta al rele solo para
+## listar las salas publicas y despues se une por codigo o desde la lista.
+func browse_online(player_name: String, game_id: String) -> int:
+	_finish_close(false)
+	_reset(player_name, game_id)
+	var url := relay_url()
+	if url == "":
+		return ERR_UNCONFIGURED
+	_peer = RelayPeer.new()
+	var err: int = _peer.browse(url, online_key())
+	if err != OK:
+		_peer = null
+		return err
+	_peer.peer_connected.connect(_on_peer_connected)
+	_peer.peer_disconnected.connect(_on_peer_disconnected)
+	online = true
+	is_host = false
+	joined_address = url
+	state = State.BROWSING
+	return OK
+
+
+## Tras browse_online: entrar a la sala elegida (publica o por codigo).
+func join_room(code: String) -> int:
+	if _peer == null or not _peer is RelayPeer:
+		return ERR_UNCONFIGURED
+	var err: int = _peer.join_room(code)
+	if err == OK:
+		state = State.JOINING
+	return err
+
+
+func public_rooms() -> PackedStringArray:
+	return _peer.public_rooms if online and _peer is RelayPeer else PackedStringArray()
+
+
+func refresh_rooms() -> void:
+	if online and _peer is RelayPeer:
+		_peer.list_rooms()
+
+
 ## 443860: se une a la partida elegida. La conexion termina en segundo plano: players() pasa a
 ## 2 cuando los dos lados se han saludado.
 func join(address: String, port: int) -> int:
@@ -164,7 +266,7 @@ func join(address: String, port: int) -> int:
 	_reset(local_name,game)
 	_close_discovery()
 	_peer = ENetMultiplayerPeer.new()
-	var err := _peer.create_client(address, port)
+	var err: int = _peer.create_client(address, port)
 	if err != OK:
 		_peer = null
 		return err
@@ -309,6 +411,8 @@ func _reset(player_name: String, game_id: String) -> void:
 	local_name = player_name
 	game = game_id
 	remote_name = ""
+	online = false
+	relay_error = ""
 	sessions.clear()
 	in_flight = 0
 	error = 0
@@ -356,12 +460,14 @@ func _poll() -> void:
 	# ENet signals run inside poll(). Always retain queued application packets
 	# before processing disconnection; close controls are reliable and ordered.
 	_peer.poll()
+	if online and _peer is RelayPeer and _peer.error_reason != "" and relay_error == "":
+		relay_error = _peer.error_reason
 	while _peer.get_available_packet_count() > 0:
-		var from := _peer.get_packet_peer()
-		var packet := _peer.get_packet()
+		var from: int = _peer.get_packet_peer()
+		var packet: PackedByteArray = _peer.get_packet()
 		if from != _remote_peer or packet.size() < 2:
 			continue
-		var kind := packet.decode_u16(0)
+		var kind: int = packet.decode_u16(0)
 		if kind == HELLO:
 			_on_hello(packet)
 			continue
@@ -394,8 +500,10 @@ func _poll() -> void:
 			_close_timed_out = true
 			_finish_close(true)
 		return
-	# El invitado no llego a conectar (anfitrion desaparecido o lleno).
-	if state == State.JOINING and _remote_peer == 0 \
+	# El invitado no llego a conectar (anfitrion desaparecido o lleno), o el rele
+	# cerro antes de enlazar al anfitrion en linea.
+	if _remote_peer == 0 \
+			and (state == State.JOINING or (online and (state == State.HOSTING or state == State.BROWSING))) \
 			and _peer.get_connection_status() == MultiplayerPeer.CONNECTION_DISCONNECTED:
 		_lose()
 
