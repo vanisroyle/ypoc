@@ -913,9 +913,11 @@ func _redraw() -> void:
 			_pile_top_card(p, DuelMem.LOC_GRAVE, grave, grave_top)
 			_register_card(grave_top, CARD_SIZE, p, 14, int(grave["count"]) - 1, int(grave["top"]), true)
 			_count(JoeyPile.base_position(p, 14) if theme == "joey" else DuelGeometry.GRAVE[p], int(grave["count"]))
-		if theme == "kaiba" and int(table.piles[p][DuelMem.LOC_BANISH]["count"]) > 0:
+		# Como en el duelo real, la pila de excluidas depende del motor, no del tema:
+		# en el juego combinado el motor es siempre joey y se ve el monton de Joey.
+		if game == "kaiba" and int(table.piles[p][DuelMem.LOC_BANISH]["count"]) > 0:
 			_excluded_pile(p, int(table.piles[p][DuelMem.LOC_BANISH]["count"]))
-		if theme == "joey" and int(table.piles[p][DuelMem.LOC_BANISH]["count"]) > 0:
+		if game == "joey" and int(table.piles[p][DuelMem.LOC_BANISH]["count"]) > 0:
 			_draw_joey_excluded_pile(p, table.piles[p][DuelMem.LOC_BANISH])
 		# 441d90: ambas manos centradas525, parcialmente fuera de los bordes600/0.
 		var hand_n: int = table.hand[p].size()
